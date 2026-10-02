@@ -1,0 +1,56 @@
+{
+  "id": "aer_2026_27",
+  "title": "Default Market Offer 2026\u201327",
+  "organisation": "Australian Energy Regulator",
+  "url": "https://www.aer.gov.au/industry/retail/default-market-offer",
+  "publication_date": null,
+  "effective_from": "2026-07-01",
+  "effective_to": "2027-06-30",
+  "retrieved_at": "2026-10-02",
+  "jurisdiction": "NSW",
+  "source_category": "CURRENT_OFFICIAL_PRICING",
+  "confidence": "high",
+  "customer_type": "Residential",
+  "verification": "verified",
+  "values": {
+    "Ausgrid_usage": {
+      "value": 0.3314,
+      "unit": "AUD/kWh",
+      "evidence": "Ausgrid: 0.3314 AUD/kWh; residential flat-rate cap, 2026\u201327"
+    },
+    "Ausgrid_supply": {
+      "value": 1.66,
+      "unit": "AUD/day",
+      "evidence": "Ausgrid: 1.66 AUD/day; residential flat-rate cap, 2026\u201327"
+    },
+    "Endeavour Energy_usage": {
+      "value": 0.3373,
+      "unit": "AUD/kWh",
+      "evidence": "Endeavour Energy: 0.3373 AUD/kWh; residential flat-rate cap, 2026\u201327"
+    },
+    "Endeavour Energy_supply": {
+      "value": 1.85,
+      "unit": "AUD/day",
+      "evidence": "Endeavour Energy: 1.85 AUD/day; residential flat-rate cap, 2026\u201327"
+    },
+    "Essential Energy_usage": {
+      "value": 0.3501,
+      "unit": "AUD/kWh",
+      "evidence": "Essential Energy: 0.3501 AUD/kWh; residential flat-rate cap, 2026\u201327"
+    },
+    "Essential Energy_supply": {
+      "value": 2.72,
+      "unit": "AUD/day",
+      "evidence": "Essential Energy: 2.72 AUD/day; residential flat-rate cap, 2026\u201327"
+    }
+  },
+  "evidence": [
+    "Ausgrid: 0.3314 AUD/kWh; residential flat-rate cap, 2026\u201327",
+    "Ausgrid: 1.66 AUD/day; residential flat-rate cap, 2026\u201327",
+    "Endeavour Energy: 0.3373 AUD/kWh; residential flat-rate cap, 2026\u201327",
+    "Endeavour Energy: 1.85 AUD/day; residential flat-rate cap, 2026\u201327",
+    "Essential Energy: 0.3501 AUD/kWh; residential flat-rate cap, 2026\u201327",
+    "Essential Energy: 2.72 AUD/day; residential flat-rate cap, 2026\u201327"
+  ],
+  "notes": "Residential flat-rate DMO tariff caps, not a quotation or prediction of a retail bill. Zone must be selected explicitly. Publication date is not displayed on the landing page and is recorded as unknown."
+}

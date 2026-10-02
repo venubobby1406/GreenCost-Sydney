@@ -1,0 +1,56 @@
+{
+  "id": "sydney_water_2026_27",
+  "title": "Residential pricing 2026–27",
+  "organisation": "Sydney Water",
+  "url": "https://www.sydneywater.com.au/accounts-billing/paying-your-bill/our-prices/residential-pricing.html",
+  "publication_date": null,
+  "effective_from": "2026-07-01",
+  "effective_to": "2027-06-30",
+  "retrieved_at": "2026-10-02",
+  "jurisdiction": "NSW",
+  "source_category": "CURRENT_OFFICIAL_PRICING",
+  "confidence": "high",
+  "customer_type": "Residential",
+  "verification": "verified",
+  "values": {
+    "drinking_usage": {
+      "value": 3.41,
+      "unit": "AUD/kL",
+      "evidence": "2026–27 drinking usage: 3.41 AUD/kL"
+    },
+    "drought_usage": {
+      "value": 3.84,
+      "unit": "AUD/kL",
+      "evidence": "2026–27 drought usage: 3.84 AUD/kL"
+    },
+    "water_service": {
+      "value": 26.65,
+      "unit": "AUD/92 days",
+      "evidence": "2026–27 water service: 26.65 AUD/92 days"
+    },
+    "wastewater": {
+      "value": 189.88,
+      "unit": "AUD/92 days",
+      "evidence": "2026–27 wastewater: 189.88 AUD/92 days"
+    },
+    "stormwater_house": {
+      "value": 30.26,
+      "unit": "AUD/92 days",
+      "evidence": "2026–27 stormwater house: 30.26 AUD/92 days"
+    },
+    "stormwater_unit": {
+      "value": 9.67,
+      "unit": "AUD/92 days",
+      "evidence": "2026–27 stormwater unit: 9.67 AUD/92 days"
+    }
+  },
+  "evidence": [
+    "2026–27 drinking usage: 3.41 AUD/kL",
+    "2026–27 drought usage: 3.84 AUD/kL",
+    "2026–27 water service: 26.65 AUD/92 days",
+    "2026–27 wastewater: 189.88 AUD/92 days",
+    "2026–27 stormwater house: 30.26 AUD/92 days",
+    "2026–27 stormwater unit: 9.67 AUD/92 days"
+  ],
+  "notes": "Metered residential supply. Fixed charges are daily, published at the maximum 92-day quarter; model uses charge / 92 × 365. Stormwater is opt-in, subject to catchment. Standard drinking-water rate is conditional on drought pricing not applying; confirm using the bill. Publication date not displayed."
+}

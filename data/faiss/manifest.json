@@ -1,0 +1,13 @@
+{
+  "model": "local-hash-v1",
+  "files": {
+    "knowledge\\EPP_LS.pdf": "46b88000233b1d0a50941998079e57051c5229c72f6b75d686154cfa8e0d1183",
+    "knowledge\\EPP_REFLECTIONS.pdf": "9f92b450c2cd6258653b5f8b24da94a11e09d22eb8af2edd20015fc23fd4acc2",
+    "knowledge\\Project_Proposal_EPP.pdf": "9a62f766a4fbbe22c68a2ae6b6c4a96fb5f716d5e8c9cd6fb3bb27d47107fde2",
+    "knowledge\\nsw_context.json": "345ad5d7f53803994a394a23e28ffb709cb5dc3d27d4b343f2f17af76143c33d",
+    "verified\\abs_ppi_2026.json": "fb7206268d0197608ab4a4eb62f7326acb0a180b5ce29d8737074898cf70ef5e",
+    "verified\\aer_2026_27.json": "033222d4ab3d1b9c6f1a9caf65b3b06b391271f07faa5a7ec0d66a754e1b2436",
+    "verified\\sydney_water_2026_27.json": "db654862b60d330ebb2cb5775c3e88b7f8ed3f2177cb6182e562957cb3cb47ac"
+  },
+  "chunks": 47
+}

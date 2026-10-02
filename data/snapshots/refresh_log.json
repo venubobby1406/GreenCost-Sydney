@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-02",
+  "tavily_calls": 0,
+  "results": [
+    {
+      "id": "abs_ppi_2026",
+      "status": "verified",
+      "snapshot_sha256": "96228ee11f2c5757c3e9cdff922a37497474684d964574ff585b825ab596a4ee"
+    },
+    {
+      "id": "aer_2026_27",
+      "status": "retained; original-page verification failed",
+      "reason": "ReadTimeout"
+    },
+    {
+      "id": "sydney_water_2026_27",
+      "status": "verified",
+      "snapshot_sha256": "52fb3fa2a6ed0608c5c27672a0bbd5e41cc894ab467367a9988891e76108fac3"
+    }
+  ]
+}

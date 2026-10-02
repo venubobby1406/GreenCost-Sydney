@@ -1,0 +1,38 @@
+{
+  "id": "abs_ppi_2026",
+  "title": "Producer Price Indexes — June 2026",
+  "organisation": "Australian Bureau of Statistics",
+  "url": "https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/producer-price-indexes-australia/jun-2026",
+  "publication_date": "2026-07-31",
+  "effective_from": "2026-06-30",
+  "effective_to": null,
+  "retrieved_at": "2026-10-02",
+  "jurisdiction": "Australia",
+  "source_category": "OFFICIAL_INDEX",
+  "confidence": "high",
+  "customer_type": "Building construction",
+  "verification": "verified",
+  "values": {
+    "building_construction": {
+      "value": 163.3,
+      "unit": "index points",
+      "evidence": "National building construction, June 2026: 163.3"
+    },
+    "quarter_change": {
+      "value": 1.4,
+      "unit": "%",
+      "evidence": "Quarterly change: 1.4%"
+    },
+    "annual_change": {
+      "value": 4.9,
+      "unit": "%",
+      "evidence": "Annual change: 4.9%"
+    }
+  },
+  "evidence": [
+    "National building construction, June 2026: 163.3",
+    "Quarterly change: 1.4%",
+    "Annual change: 4.9%"
+  ],
+  "notes": "National output of building construction. Indexation only: historical cost × current index / matching historical index. Not an absolute Sydney construction benchmark. Future escalation is a separate user assumption."
+}
