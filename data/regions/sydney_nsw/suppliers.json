@@ -1,0 +1,19 @@
+{
+  "status": "candidates_owner_must_verify_terms",
+  "note": "Allow-list for Tavily domain filtering. Candidates only. Owner to review each site's terms and add or remove domains. Empty lists must be filled before live updates are enabled for that category.",
+  "categories": {
+    "building_supply_and_hardware": [
+      "bunnings.com.au"
+    ],
+    "plumbing_and_hot_water": [
+      "reece.com.au"
+    ],
+    "solar_price_index_and_installers": [
+      "solarquotes.com.au"
+    ],
+    "windows_and_glazing": [],
+    "hvac": [],
+    "electrical_and_lighting": [],
+    "rainwater_tanks": []
+  }
+}

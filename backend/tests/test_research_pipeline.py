@@ -1,4 +1,4 @@
-"""Integration contracts for Chroma, Gemini, Tavily and streamed analysis."""
+"""Integration contracts for file retrieval, Gemini, Tavily and streamed analysis."""
 import json
 from pathlib import Path
 from unittest.mock import patch
@@ -79,7 +79,7 @@ def test_stream_stages_and_saved_result():
     assert len([e for e in events if e["type"] == "stage"]) == 8
     saved = events[-1]["result"]
     assert saved["id"] and client.get(f"/api/analyses/{saved['id']}").status_code == 200
-    assert saved["research_status"]["vector_db"] == "chroma"
+    assert saved["research_status"]["vector_db"] == "none"
 
 
 def test_saved_what_if_reuses_saved_tariffs_and_signed_rates():
@@ -98,21 +98,21 @@ def test_zero_total_with_rate_rejected():
     assert result.status_code == 422
 
 
-def test_chroma_incremental_change_and_deletion(tmp_path, monkeypatch):
+def test_file_index_incremental_change_and_deletion(tmp_path, monkeypatch):
     knowledge = tmp_path / "knowledge"
     knowledge.mkdir()
     (tmp_path / "verified").mkdir()
     monkeypatch.setattr(store, "DATA", tmp_path)
-    monkeypatch.setattr(store, "INDEX_DIR", tmp_path / "chroma")
+    monkeypatch.setattr(store, "INDEX_DIR", tmp_path / "none")
     path = knowledge / "research.json"
     path.write_text(json.dumps(dict(title="Test research", source_category="PROJECT_RESEARCH", text="solar energy savings")))
     first = store.ingest()
     assert first["new_embeddings"] > 0 and store.readiness()["ready"]
     assert store.ingest()["new_embeddings"] == 0
-    old_ids = store.collection().get()["ids"]
+    old_ids = [d["id"] for d in store.records()]
     path.write_text(json.dumps(dict(title="Test research", source_category="PROJECT_RESEARCH", text="water maintenance research")))
     assert store.ingest()["new_embeddings"] > 0
-    assert not set(old_ids) & set(store.collection().get()["ids"])
+    assert not set(old_ids) & set([d["id"] for d in store.records()])
     assert store.retrieve("water maintenance", 3, "PROJECT_RESEARCH")
 
 
@@ -123,7 +123,7 @@ def test_pdf_upload_validation_and_indexing(tmp_path, monkeypatch):
     (tmp_path / "verified").mkdir()
     monkeypatch.setattr(main, "DATA", tmp_path)
     monkeypatch.setattr(store, "DATA", tmp_path)
-    monkeypatch.setattr(store, "INDEX_DIR", tmp_path / "chroma")
+    monkeypatch.setattr(store, "INDEX_DIR", tmp_path / "none")
     assert client.post("/api/knowledge/pdf?filename=bad.pdf", content=b"invalid").status_code == 422
     result = client.post("/api/knowledge/pdf?filename=../../research.pdf", content=pdf)
     assert result.status_code == 200, result.text

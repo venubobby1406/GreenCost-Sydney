@@ -3,6 +3,7 @@
 import os
 import re
 import httpx
+from backend.app.services.budget import reserve
 
 
 def configured():
@@ -12,7 +13,9 @@ def configured():
 def generate(system: str, context: str):
     if not configured():
         return None, 0, "not_configured"
-    model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
+    if not reserve("gemini"):
+        return None, 0, "budget_or_host_limit"
+    model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
     if not re.fullmatch(r"[a-zA-Z0-9._-]+", model):
         return None, 0, "invalid_model"
     try:

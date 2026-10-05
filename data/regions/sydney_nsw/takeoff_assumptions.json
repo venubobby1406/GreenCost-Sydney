@@ -1,0 +1,36 @@
+{
+  "status": "placeholder",
+  "needs": "Owner/QS to confirm; cite sources",
+  "plan": {
+    "aspect_ratio": 1.5,
+    "wall_height_m": 2.7,
+    "glazing_share_of_gfa": 0.18,
+    "door_area_m2": 6,
+    "roof_area_factor": 1.15,
+    "usable_solar_roof_share": 0.4,
+    "solar_panel_area_m2_per_kw": 5,
+    "rainwater_catchment_factor": 1.1,
+    "light_point_area_m2": 4,
+    "shaded_glazing_share": 0.5,
+    "hvac_load_w_per_m2": 70
+  },
+  "fixtures": {
+    "showers_per_bathroom": 1,
+    "toilets_per_bathroom": 1,
+    "taps_per_bathroom": 2,
+    "taps_fixed": 2
+  },
+  "worked_example_220m2_single_storey": {
+    "footprint_m2": 220,
+    "perimeter_m": 60.6,
+    "gross_wall_m2": 163.5,
+    "glazing_m2": 39.6,
+    "net_wall_m2": 117.9,
+    "ceiling_m2": 220,
+    "roof_m2": 253,
+    "envelope_m2": 383.5,
+    "solar_panel_area_m2_at_6_6kw": 33,
+    "rainwater_catchment_m2": 242,
+    "light_points": 55
+  }
+}

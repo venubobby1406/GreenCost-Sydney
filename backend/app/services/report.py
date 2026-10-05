@@ -16,10 +16,11 @@ def report_html(result, years):
         )
 
     max_y = max(x["cumulative_pv"] for s in ("conventional", "sustainable") for x in r[s]["cashflows"])
+    min_y = min(0, min(x["cumulative_pv"] for s in ("conventional", "sustainable") for x in r[s]["cashflows"]))
 
     def line(s, color):
         points = " ".join(
-            f"{30 + 640 * x['year'] / years:.2f},{220 - 180 * x['cumulative_pv'] / max(max_y, 1):.2f}"
+            f"{30 + 640 * x['year'] / years:.2f},{220 - 180 * (x['cumulative_pv'] - min_y) / max(max_y - min_y, 1):.2f}"
             for x in r[s]["cashflows"]
         )
         return f'<polyline points="{points}" fill="none" stroke="{color}" stroke-width="3"/>'
@@ -57,6 +58,7 @@ def report_html(result, years):
             [
                 ["Conventional LCC", money(r["conventional"]["total_lcc"])],
                 ["Sustainable LCC", money(r["sustainable"]["total_lcc"])],
+                ["Sustainable equivalent annual cost", money(r["sustainable"]["eauc"])],
                 ["Signed savings", money(r["savings_aud"])],
                 [
                     "Savings percentage",
@@ -116,6 +118,25 @@ def report_html(result, years):
         + "</pre>",
         f"<p>Analysis {escape(result['id'])} · {escape(result['created_at'])}. Generated from saved deterministic results. Browser Print → Save as PDF.</p>",
     ]
+    sections.insert(1, f"<p>Mode: {escape(result['project'].get('mode', 'literature'))} · Assumption version {escape(str(result.get('assumption_version')))} · Price reference {escape(str(result.get('price_snapshot_date')))}</p>")
+    details = ""
+    if result.get("measures"):
+        details += "<h2>Selected upgrades: installed differences including GST</h2>" + table(
+            ["Upgrade", "Quantity / basis", "Premium", "Source / status"],
+            [[m["name"], f"{m['quantity']:.2f} {m['quantity_driver'].replace('_', ' ')}", money(m["premium"]),
+              f"{m['badge']}: {m['source']} ({m['price_date']})"] for m in result["measures"]])
+        details += "<h2>Marginal upgrade contributions</h2><p>Measures are added in catalogue order; interactions reconcile standalone and combined savings.</p>" + table(
+            ["Upgrade", "Marginal savings", "Standalone savings", "Interaction"],
+            [[m["name"], money(m["marginal_savings"]), money(m["standalone_savings"]), money(m["interaction_adjustment"])]
+             for m in result["measure_contributions"][str(years)]])
+        details += "<h2>Indicative price uncertainty</h2>" + table(["Prices", "Signed savings", "Break-even"],
+            [[level, money(value[str(years)]["savings_aud"]), value[str(years)]["break_even_year"] or "Not reached"]
+             for level, value in result["price_sensitivity"].items()])
+    elif result.get("literature_scenarios"):
+        details += "<h2>Literature-parameter scenarios</h2>" + table(["Scenario", "Signed savings", "Break-even"],
+            [[level, money(value[str(years)]["savings_aud"]), value[str(years)]["break_even_year"] or "Not reached"]
+             for level, value in result["literature_scenarios"].items()])
+    sections.insert(7, details)
     return (
         '<!doctype html><html lang="en"><meta charset="utf-8"><title>GreenCost Sydney report</title><style>body{font:14px/1.6 Arial,sans-serif;color:#253b30;max-width:960px;margin:40px auto;padding:0 24px}h1{font-size:40px}h2{margin-top:32px}.eyebrow{letter-spacing:3px}table{width:100%;border-collapse:collapse;font-size:12px}td,th{border-bottom:1px solid #ddd;padding:8px;text-align:left;overflow-wrap:anywhere}th{background:#e9eee9}svg{width:100%}pre{white-space:pre-wrap;font-size:11px}a{color:#38604b;overflow-wrap:anywhere}@media print{body{margin:0}tr,svg{break-inside:avoid}h2{break-after:avoid}thead{display:table-header-group}@page{size:A4;margin:16mm}}</style><body>'
         + "".join(sections)

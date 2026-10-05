@@ -1,3 +1,5 @@
+> Historical checks for an earlier implementation. See PRODUCTION_VERIFICATION.md for current delivery checks.
+
 # Single-page / Gemini / Chroma rewrite — 2 October 2026
 
 Verified in this workspace:

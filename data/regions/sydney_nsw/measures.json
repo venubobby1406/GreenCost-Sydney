@@ -1,0 +1,462 @@
+{
+  "region": "sydney_nsw",
+  "version": "0.1-seed",
+  "measures": [
+    {
+      "id": "insulation",
+      "name": "Extra wall and ceiling insulation",
+      "plain_description": "Thicker insulation in walls and ceiling to keep heat in during winter and out during summer.",
+      "category": "envelope",
+      "quantity_drivers": [
+        "net_wall_area_m2",
+        "ceiling_area_m2",
+        "roof_area_m2"
+      ],
+      "reference_quantities_220m2": {
+        "net_wall_area_m2": 117.9,
+        "ceiling_area_m2": 220,
+        "roof_area_m2": 253
+      },
+      "baseline_option": {
+        "id": "code_min_insulation",
+        "label": "Code-minimum insulation (to be set from the NCC/NatHERS reference)"
+      },
+      "beyond_code_options": [
+        {
+          "id": "r2_5_wall_r5_0_ceiling_sarking",
+          "label": "R2.5 wall batts, R5.0 ceiling batts, reflective sarking"
+        }
+      ],
+      "price_keys": {
+        "baseline": [
+          "insulation_wall_baseline",
+          "insulation_ceiling_baseline"
+        ],
+        "upgrade": [
+          "insulation_wall_r2_5",
+          "insulation_ceiling_r5_0",
+          "sarking_reflective"
+        ]
+      },
+      "default_premium_at_reference": 3200,
+      "replacements": {
+        "baseline": [],
+        "upgrade": []
+      },
+      "life_years": 40,
+      "status": "placeholder",
+      "notes": ""
+    },
+    {
+      "id": "glazing",
+      "name": "High-performance windows",
+      "plain_description": "Double-glazed, low-emissivity, argon-filled windows with thermally broken frames.",
+      "category": "envelope",
+      "quantity_drivers": [
+        "glazing_area_m2"
+      ],
+      "reference_quantities_220m2": {
+        "glazing_area_m2": 39.6
+      },
+      "baseline_option": {
+        "id": "code_min_glazing",
+        "label": "Code-minimum glazing (to be set from the NCC/NatHERS reference)"
+      },
+      "beyond_code_options": [
+        {
+          "id": "double_lowe_argon_tb",
+          "label": "Double-glazed Low-E argon, thermally broken (Uw about 1.8)"
+        }
+      ],
+      "price_keys": {
+        "baseline": [
+          "glazing_baseline"
+        ],
+        "upgrade": [
+          "glazing_double_lowe_argon_tb"
+        ]
+      },
+      "default_premium_at_reference": 5500,
+      "replacements": {
+        "baseline": [],
+        "upgrade": []
+      },
+      "life_years": 35,
+      "status": "placeholder",
+      "notes": ""
+    },
+    {
+      "id": "airtightness_shading",
+      "name": "Air sealing and passive shading",
+      "plain_description": "Sealing gaps to stop draughts, plus eaves or louvres to block summer sun.",
+      "category": "envelope",
+      "quantity_drivers": [
+        "envelope_area_m2",
+        "shaded_glazing_area_m2"
+      ],
+      "reference_quantities_220m2": {
+        "envelope_area_m2": 383.5,
+        "shaded_glazing_area_m2": 19.8
+      },
+      "baseline_option": {
+        "id": "code_min_sealing",
+        "label": "Code-minimum sealing and shading"
+      },
+      "beyond_code_options": [
+        {
+          "id": "sealed_tested_shaded",
+          "label": "Continuous air barrier, blower-door test, engineered shading"
+        }
+      ],
+      "price_keys": {
+        "baseline": [],
+        "upgrade": [
+          "airtightness_package",
+          "shading_package"
+        ]
+      },
+      "default_premium_at_reference": 3800,
+      "replacements": {
+        "baseline": [],
+        "upgrade": []
+      },
+      "life_years": 40,
+      "status": "placeholder",
+      "notes": ""
+    },
+    {
+      "id": "hvac",
+      "name": "Efficient heating and cooling",
+      "plain_description": "Inverter heat pump air conditioning that uses much less electricity for the same comfort.",
+      "category": "active",
+      "quantity_drivers": [
+        "conditioned_area_m2",
+        "hvac_capacity_kw"
+      ],
+      "reference_quantities_220m2": {
+        "conditioned_area_m2": 220,
+        "hvac_capacity_kw": 15.4
+      },
+      "baseline_option": {
+        "id": "fixed_speed_ducted",
+        "label": "Fixed-speed ducted split (EER about 3.1)"
+      },
+      "beyond_code_options": [
+        {
+          "id": "inverter_multizone",
+          "label": "Inverter multi-zone heat pump (EER 4.6 or higher)"
+        }
+      ],
+      "price_keys": {
+        "baseline": [
+          "hvac_baseline"
+        ],
+        "upgrade": [
+          "hvac_inverter_multisplit"
+        ]
+      },
+      "default_premium_at_reference": 4500,
+      "replacements": {
+        "baseline": [
+          {
+            "year": 15,
+            "cost_key": "hvac_compressor_baseline",
+            "default": 3500
+          }
+        ],
+        "upgrade": [
+          {
+            "year": 15,
+            "cost_key": "hvac_compressor_upgrade",
+            "default": 3800
+          }
+        ]
+      },
+      "life_years": 15,
+      "status": "placeholder",
+      "notes": ""
+    },
+    {
+      "id": "hot_water",
+      "name": "Heat pump hot water",
+      "plain_description": "A heat pump water heater that makes hot water with a fraction of the electricity.",
+      "category": "active",
+      "quantity_drivers": [
+        "units"
+      ],
+      "reference_quantities_220m2": {
+        "units": 1
+      },
+      "baseline_option": {
+        "id": "electric_storage_or_gas",
+        "label": "Electric storage or instant gas"
+      },
+      "beyond_code_options": [
+        {
+          "id": "heat_pump_co2_or_air",
+          "label": "Heat pump hot water (COP 4.2 or higher)"
+        }
+      ],
+      "price_keys": {
+        "baseline": [
+          "hot_water_baseline"
+        ],
+        "upgrade": [
+          "hot_water_heat_pump"
+        ]
+      },
+      "default_premium_at_reference": 2800,
+      "replacements": {
+        "baseline": [
+          {
+            "year": 12,
+            "cost_key": "hot_water_unit_baseline",
+            "default": 1800
+          }
+        ],
+        "upgrade": []
+      },
+      "life_years": 15,
+      "status": "placeholder",
+      "notes": "Default is net of incentives per the spec; show incentives as a separate line instead."
+    },
+    {
+      "id": "solar_pv",
+      "name": "Rooftop solar",
+      "plain_description": "Solar panels that generate your own electricity and export the surplus.",
+      "category": "generation",
+      "quantity_drivers": [
+        "solar_kw",
+        "solar_panel_area_m2"
+      ],
+      "reference_quantities_220m2": {
+        "solar_kw": 6.6,
+        "solar_panel_area_m2": 33
+      },
+      "baseline_option": {
+        "id": "no_solar",
+        "label": "No solar"
+      },
+      "beyond_code_options": [
+        {
+          "id": "solar_selectable_kw",
+          "label": "Selectable size, 0 to 13.2 kW, subject to roof capacity"
+        }
+      ],
+      "price_keys": {
+        "baseline": [],
+        "upgrade": [
+          "solar_pv_installed_per_kw"
+        ]
+      },
+      "default_premium_at_reference": 5800,
+      "replacements": {
+        "baseline": [],
+        "upgrade": [
+          {
+            "year": 12,
+            "cost_key": "solar_inverter_replacement",
+            "default": 2200
+          }
+        ]
+      },
+      "life_years": 25,
+      "status": "placeholder",
+      "notes": "Default scales per kW (about $880/kW)."
+    },
+    {
+      "id": "rainwater",
+      "name": "Rainwater tank",
+      "plain_description": "A 5,000 L tank plumbed to toilets and laundry to cut mains water use.",
+      "category": "water",
+      "quantity_drivers": [
+        "tank_kl",
+        "catchment_area_m2"
+      ],
+      "reference_quantities_220m2": {
+        "tank_kl": 5,
+        "catchment_area_m2": 242
+      },
+      "baseline_option": {
+        "id": "mains_only",
+        "label": "Mains water only"
+      },
+      "beyond_code_options": [
+        {
+          "id": "tank_5kl_plumbed",
+          "label": "5,000 L poly tank, pump, plumbed to toilets and laundry"
+        }
+      ],
+      "price_keys": {
+        "baseline": [],
+        "upgrade": [
+          "rainwater_tank_5kl_poly",
+          "rainwater_pump_system"
+        ]
+      },
+      "default_premium_at_reference": 4200,
+      "replacements": {
+        "baseline": [],
+        "upgrade": [
+          {
+            "year": 10,
+            "cost_key": "rainwater_pump_system",
+            "default": 750
+          }
+        ]
+      },
+      "life_years": 30,
+      "status": "placeholder",
+      "notes": ""
+    },
+    {
+      "id": "water_fixtures",
+      "name": "Water-efficient fixtures",
+      "plain_description": "Taps, showerheads and toilets with better WELS ratings.",
+      "category": "water",
+      "quantity_drivers": [
+        "showers",
+        "toilets",
+        "taps"
+      ],
+      "reference_quantities_220m2": {
+        "showers": 2,
+        "toilets": 2,
+        "taps": 6
+      },
+      "baseline_option": {
+        "id": "wels_3",
+        "label": "3-star WELS fixtures"
+      },
+      "beyond_code_options": [
+        {
+          "id": "wels_5",
+          "label": "5-star WELS fixtures"
+        }
+      ],
+      "price_keys": {
+        "baseline": [
+          "fixture_wels_baseline"
+        ],
+        "upgrade": [
+          "fixture_wels_5"
+        ]
+      },
+      "default_premium_at_reference": null,
+      "replacements": {
+        "baseline": [],
+        "upgrade": []
+      },
+      "life_years": 20,
+      "status": "placeholder",
+      "notes": ""
+    },
+    {
+      "id": "lighting",
+      "name": "Efficient lighting",
+      "plain_description": "LED lighting throughout.",
+      "category": "active",
+      "quantity_drivers": [
+        "light_points"
+      ],
+      "reference_quantities_220m2": {
+        "light_points": 55
+      },
+      "baseline_option": {
+        "id": "code_min_lighting",
+        "label": "Code-minimum lighting"
+      },
+      "beyond_code_options": [
+        {
+          "id": "led_throughout",
+          "label": "Dimmable LED throughout"
+        }
+      ],
+      "price_keys": {
+        "baseline": [
+          "lighting_baseline"
+        ],
+        "upgrade": [
+          "lighting_led_downlight"
+        ]
+      },
+      "default_premium_at_reference": null,
+      "replacements": {
+        "baseline": [],
+        "upgrade": []
+      },
+      "life_years": 15,
+      "status": "placeholder",
+      "notes": ""
+    },
+    {
+      "id": "smart_controls",
+      "name": "Smart energy controls",
+      "plain_description": "A controller that shifts appliance use to when solar is generating.",
+      "category": "active",
+      "quantity_drivers": [
+        "units"
+      ],
+      "reference_quantities_220m2": {
+        "units": 1
+      },
+      "baseline_option": {
+        "id": "no_controls",
+        "label": "No controls"
+      },
+      "beyond_code_options": [
+        {
+          "id": "home_energy_management",
+          "label": "Home energy management controller"
+        }
+      ],
+      "price_keys": {
+        "baseline": [],
+        "upgrade": [
+          "smart_controls_hub"
+        ]
+      },
+      "default_premium_at_reference": null,
+      "replacements": {
+        "baseline": [],
+        "upgrade": []
+      },
+      "life_years": 12,
+      "status": "placeholder",
+      "notes": "Affects solar self-consumption (25% to 60% in the spec); interacts with solar and hot water."
+    },
+    {
+      "id": "sustainable_materials",
+      "name": "Sustainable material alternatives",
+      "plain_description": "Lower-impact materials in place of standard ones.",
+      "category": "materials",
+      "quantity_drivers": [
+        "to_be_defined"
+      ],
+      "reference_quantities_220m2": {},
+      "baseline_option": {
+        "id": "standard_materials",
+        "label": "Standard materials"
+      },
+      "beyond_code_options": [],
+      "price_keys": {
+        "baseline": [],
+        "upgrade": []
+      },
+      "default_premium_at_reference": null,
+      "replacements": {
+        "baseline": [],
+        "upgrade": []
+      },
+      "life_years": 40,
+      "status": "placeholder",
+      "notes": "Out of scope for first release unless the owner defines specific items."
+    }
+  ],
+  "interaction_notes": [
+    "Insulation and glazing reduce HVAC demand",
+    "Solar value depends on load and smart controls",
+    "Heat pump hot water shifts load to daytime"
+  ],
+  "note": "All measure values are placeholders until sourced. default_premium_at_reference is the premium over code-minimum for the 220 m2 reference house; scale by quantity ratio until live prices pass validation. null means 'no default; show Indicative and source it'."
+}

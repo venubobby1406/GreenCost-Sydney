@@ -20,6 +20,7 @@ load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 import httpx
 from bs4 import BeautifulSoup
 from backend.app.research.sources import DATA, official_domain, load_sources, validate_source
+from backend.app.services.budget import reserve
 
 
 def verify_page(source, text):
@@ -84,6 +85,8 @@ def refresh(direct=False, offline=False):
         for s in sources:
             validate_source(s)
         return {"status": "cached records valid", "tavily_calls": 0}
+    if direct:
+        return {"status": "Direct scraping disabled. Use Tavily mode or reviewed manual records.", "tavily_calls": 0}
     if not direct and not os.getenv("TAVILY_API_KEY"):
         return {"status": "No Tavily key; retained local cache without network calls.", "tavily_calls": 0}
     calls, results = 0, []
@@ -92,6 +95,8 @@ def refresh(direct=False, offline=False):
             domain = source["url"].split("/")[2].removeprefix("www.")
             try:
                 if not direct:
+                    if not reserve("tavily"):
+                        raise ValueError("Daily or monthly request cap reached")
                     calls += 1
                     response = client.post(
                         "https://api.tavily.com/search",
@@ -110,12 +115,18 @@ def refresh(direct=False, offline=False):
                     ]
                     if not hits:
                         raise ValueError("No official discovery result; cache preserved")
-                # Pin original official URLs; never follow an untrusted result URL or redirect.
-                response = client.get(source["url"])
+                # Extract pinned official URLs through Tavily; retain no page copies.
+                if not reserve("tavily"):
+                    raise ValueError("Daily or monthly request cap reached")
+                calls += 1
+                response = client.post("https://api.tavily.com/extract", json={
+                    "api_key": os.environ["TAVILY_API_KEY"], "urls": [source["url"]],
+                    "extract_depth": "basic", "format": "text",
+                })
                 response.raise_for_status()
-                text = BeautifulSoup(response.text, "html.parser").get_text(" ", strip=True)
-                (DATA / "snapshots").mkdir(exist_ok=True)
-                (DATA / "snapshots" / f"{source['id']}.txt").write_text(text, encoding="utf-8")
+                extracted = response.json().get("results", [])
+                text = next(item["raw_content"] for item in extracted if item.get("url") == source["url"])
+                text = BeautifulSoup(text, "html.parser").get_text(" ", strip=True)
                 verify_page(source, text)
                 source["retrieved_at"] = date.today().isoformat()
                 validate_source(source)
@@ -130,7 +141,7 @@ def refresh(direct=False, offline=False):
                         "snapshot_sha256": hashlib.sha256(text.encode()).hexdigest(),
                     }
                 )
-            except (httpx.HTTPError, ValueError, KeyError) as error:
+            except (httpx.HTTPError, ValueError, KeyError, StopIteration) as error:
                 # Never echo response headers, payloads, API keys or arbitrary remote error text.
                 results.append(
                     {
@@ -140,6 +151,7 @@ def refresh(direct=False, offline=False):
                     }
                 )
     log = {"date": date.today().isoformat(), "tavily_calls": calls, "results": results}
+    (DATA / "snapshots").mkdir(exist_ok=True)
     (DATA / "snapshots/refresh_log.json").write_text(json.dumps(log, indent=2), encoding="utf-8")
     return log
 
@@ -147,6 +159,6 @@ def refresh(direct=False, offline=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--offline", action="store_true")
-    parser.add_argument("--direct", action="store_true", help="Original-page verification without Tavily discovery")
+    parser.add_argument("--direct", action="store_true", help="Disabled: direct scraping is not allowed; use Tavily search and extract")
     args = parser.parse_args()
     print(json.dumps(refresh(args.direct, args.offline), indent=2))

@@ -1,11 +1,25 @@
 from typing import TypedDict
-from langgraph.graph import StateGraph, START, END
 from backend.app.schemas.models import Project
 from backend.app.rag.store import retrieve
 from backend.app.research.sources import tariffs, load_sources
-from backend.app.services.analysis import scenarios, assumptions, compute_periods, compute_sensitivity
+from backend.app.services.analysis import scenarios, assumptions, compute_periods, compute_sensitivity, research_outputs
 from backend.app.services.explanation import explain
 from backend.app.research.web import research
+
+
+LIMITATIONS = [
+                "Academic scenario model; no QS quote, building simulation or regulatory certificate.",
+                "Same building geometry in both scenarios. Itemised end-use coefficients, cost differences and rectangular takeoff are indicative; confirm with a builder and energy assessor. Code-minimum preset is provisional, not a compliance claim.",
+                "Nominal AUD cash flows, year-zero capital; year t prices escalate t times and year-end costs discount t times. Use mutually consistent nominal rates.",
+                "Flat tariffs only. Itemised mode models grid imports, solar exports and gas space heating using indicative end-use splits. Literature mode reduces usage charges only; finance, land and automatic rebates are excluded.",
+                "Replacements occur before the terminal year, never at retirement. No residual value is inferred; user supplies it.",
+                "Sydney Water fixed charges normalized from 92 days to 365 days; confirm metering, drought tariff, wastewater and stormwater applicability.",
+                "Discounted break-even is the first crossover and may later reverse. Long-term tariffs are escalated scenarios, not official future prices.",
+                "Research PDFs are secondary evidence; their claims and bibliography have not been independently peer-reviewed.",
+                "Confirm excavation, soil, bushfire/flood requirements and other site-specific work in the baseline quote. No automatic site allowance is added; upgrade performance assumes correct installation.",
+                "Solar orientation, shading, network approval and export limits require installer/distributor review. The roof-capacity check is indicative only.",
+                "Rainwater plumbing, council/BASIX requirements, maintenance and first-flush devices need project-specific confirmation. Prices are dated snapshots and may change.",
+            ]
 
 
 class State(TypedDict, total=False):
@@ -46,7 +60,7 @@ def research_online(state):
 
 
 def check_data(state):
-    return {"rates": tariffs(state["project"])}
+    return {"rates": state["project"].rates_snapshot or tariffs(state["project"])}
 
 
 def calculate_scenarios(state):
@@ -75,7 +89,7 @@ def generate_explanation(state):
     c, s, _ = state["scenarios"]
     confidence = (
         "Low / indicative"
-        if p.input_quality == "demo"
+        if p.input_quality == "demo" or p.mode == "itemised"
         else "High"
         if p.input_quality == "actual"
         and p.performance_source == "user"
@@ -90,6 +104,7 @@ def generate_explanation(state):
     }
     return {
         "result": dict(
+            **research_outputs(p, state["rates"], state["periods"]),
             project=p.model_dump(mode="json"),
             periods=state["periods"],
             sensitivity=state["sensitivity"],
@@ -100,22 +115,12 @@ def generate_explanation(state):
             confidence=confidence,
             confidence_reason=reasons[confidence],
             usage=dict(tavily_calls=state.get("web_calls", 0), llm_calls=calls),
-            research_status=dict(gemini=gemini_status, tavily=state.get("web_status", "disabled"), vector_db="chroma"),
-            limitations=[
-                "Academic scenario model; no QS quote, building simulation or regulatory certificate.",
-                "Same building geometry in both scenarios. Feature toggles do not invent individual savings; entered reductions represent the whole package and avoid double counting.",
-                "Nominal AUD cash flows, year-zero capital; year t prices escalate t times and year-end costs discount t times. Use mutually consistent nominal rates.",
-                "Flat electricity tariff only; grid imports are entered net of solar self-use. Export income, batteries, gas, finance, land, grants and taxes are excluded unless included explicitly in inputs.",
-                "Replacements occur before the terminal year, never at retirement. No residual value is inferred; user supplies it.",
-                "Sydney Water fixed charges normalized from 92 days to 365 days; confirm metering, drought tariff, wastewater and stormwater applicability.",
-                "Discounted break-even is the first crossover and may later reverse. Long-term tariffs are escalated scenarios, not official future prices.",
-                "Research PDFs are secondary evidence; their claims and bibliography have not been independently peer-reviewed.",
-            ],
+            research_status=dict(gemini=gemini_status, tavily=state.get("web_status", "disabled"), vector_db="none"),
+            limitations=LIMITATIONS,
         )
     }
 
 
-builder = StateGraph(State)
 nodes = [
     validate_input,
     retrieve_local_evidence,
@@ -126,22 +131,16 @@ nodes = [
     sensitivity_analysis,
     generate_explanation,
 ]
-for node in nodes:
-    builder.add_node(node.__name__, node)
-builder.add_edge(START, nodes[0].__name__)
-for a, b in zip(nodes, nodes[1:]):
-    builder.add_edge(a.__name__, b.__name__)
-builder.add_edge(nodes[-1].__name__, END)
-workflow = builder.compile()
-
-
 def analyse(raw):
-    return workflow.invoke({"raw": raw})["result"]
+    state = {"raw": raw}
+    for node in nodes:
+        state.update(node(state))
+    return state["result"]
 
 
 STAGES = {
     "validate_input": "Your project is validated",
-    "retrieve_local_evidence": "Relevant PDF passages retrieved from Chroma",
+    "retrieve_local_evidence": "Relevant PDF passages retrieved from local files",
     "research_online": "Web research checked",
     "check_data": "Utility prices validated",
     "calculate_scenarios": "Both building scenarios prepared",
@@ -152,8 +151,11 @@ STAGES = {
 
 
 def analyse_stream(raw):
-    for update in workflow.stream({"raw": raw}, stream_mode="updates"):
+    state = {"raw": raw}
+    for function in nodes:
+        update = {function.__name__: function(state)}
         for node, values in update.items():
+            state.update(values)
             message = STAGES[node]
             if node == "research_online" and values.get("web_status") != "complete":
                 message = "Web research skipped or unavailable; continuing with local PDF evidence"

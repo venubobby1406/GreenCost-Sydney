@@ -3,6 +3,7 @@
 import os
 from datetime import datetime, timezone
 import httpx
+from backend.app.services.budget import reserve
 from backend.app.research.sources import official_domain
 
 DOMAINS = {"aer.gov.au", "sydneywater.com.au", "abs.gov.au", "planning.nsw.gov.au", "planningportal.nsw.gov.au"}
@@ -13,6 +14,8 @@ def research(query: str, enabled=True):
         return [], 0, "disabled"
     if not os.getenv("TAVILY_API_KEY"):
         return [], 0, "not_configured"
+    if not reserve("tavily"):
+        return [], 0, "budget_or_host_limit"
     try:
         response = httpx.post("https://api.tavily.com/search", json={
             "api_key": os.environ["TAVILY_API_KEY"], "query": query[:600],

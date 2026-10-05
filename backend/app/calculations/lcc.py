@@ -48,6 +48,7 @@ class Component:
     interval: int
     cost: float
     escalation: float = 0.025
+    recurring: bool = True
 
 
 @dataclass(frozen=True)
@@ -64,6 +65,9 @@ class Scenario:
     other: float = 0
     disposal: float = 0
     residual: float = 0
+    gas_annual: float = 0
+    solar_credit: float = 0
+    energy_override: float | None = None
 
 
 @dataclass(frozen=True)
@@ -116,9 +120,9 @@ def calculate(s: Scenario, a: Assumptions) -> dict:
         )
     ]
     for t in range(1, a.years + 1):
-        events = [c for c in s.replacements if c.interval > 0 and t % c.interval == 0 and t < a.years]
+        events = [c for c in s.replacements if c.interval > 0 and (t % c.interval == 0 if c.recurring else t == c.interval) and t < a.years]
         costs = dict(
-            energy=escalate(energy_cost(s.energy_kwh, s.electricity_rate, s.electricity_daily), a.energy_escalation, t),
+            energy=escalate(s.energy_override if s.energy_override is not None else energy_cost(s.energy_kwh, s.electricity_rate, s.electricity_daily) + s.gas_annual - s.solar_credit, a.energy_escalation, t),
             water=escalate(water_cost(s.water_kl, s.water_rate, s.water_fixed), a.water_escalation, t),
             maintenance=escalate(s.maintenance, a.maintenance_escalation, t),
             replacement=sum(escalate(c.cost, c.escalation, t) for c in events),
@@ -143,7 +147,9 @@ def calculate(s: Scenario, a: Assumptions) -> dict:
                 events=[c.name for c in events],
             )
         )
-    return dict(total_lcc=sum(totals.values()), components=totals, cashflows=rows)
+    total = sum(totals.values())
+    annuity = a.discount / (1 - (1 + a.discount) ** -a.years) if a.discount else 1 / a.years
+    return dict(total_lcc=total, eauc=total * annuity, components=totals, cashflows=rows)
 
 
 def compare(conventional: Scenario, sustainable: Scenario, assumptions: Assumptions) -> dict:
@@ -168,6 +174,11 @@ def compare(conventional: Scenario, sustainable: Scenario, assumptions: Assumpti
         reversal_years=reversals,
         capital_difference=sustainable.capital - conventional.capital,
         component_savings={k: c["components"][k] - s["components"][k] for k in c["components"]},
+        category_contributions=[dict(category=k, conventional=v, sustainable=s["components"][k],
+                                     difference=v - s["components"][k],
+                                     share_percent=(v - s["components"][k]) / saving * 100 if abs(saving) > 1e-9 else None)
+                                for k, v in c["components"].items()],
+        operating_share_percent=(sum(c["components"][k] for k in ("energy", "water", "maintenance", "replacement", "other")) / c["total_lcc"] * 100) if c["total_lcc"] else None,
     )
 
 

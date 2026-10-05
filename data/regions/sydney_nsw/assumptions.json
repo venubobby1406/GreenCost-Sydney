@@ -1,0 +1,182 @@
+{
+  "region": "sydney_nsw",
+  "version": "2026-10-v1",
+  "valid_from": "2026-10-05",
+  "note": "SEED FILE. Every block has a status. 'from_spec' = taken from the original specification and unverified. 'placeholder' = invented starting value. Verify, cite and date before relying on any value. Show non-verified values as 'indicative' in the UI.",
+  "financial": {
+    "discount_rate_default": 0.05,
+    "energy_escalation_default": 0.03,
+    "water_escalation": 0.02,
+    "maintenance_escalation": 0.015,
+    "horizons": [
+      30,
+      40,
+      50
+    ],
+    "discount_rate_grid": [
+      0.04,
+      0.05,
+      0.06,
+      0.07
+    ],
+    "energy_escalation_grid": [
+      0.02,
+      0.03,
+      0.04,
+      0.05
+    ],
+    "status": "from_study_proposal",
+    "source": "Project proposal (UTS 42908); ISO 15686-5 (2017)"
+  },
+  "tariffs": {
+    "electricity_import_per_kwh": 0.325,
+    "electricity_supply_per_day": 1.5,
+    "solar_feed_in_per_kwh": 0.05,
+    "water_per_kl": 3.41,
+    "water_fixed_per_year": 987.16,
+    "status": "from_spec",
+    "needs": "Verify against AER Default Market Offer, IPART and Sydney Water determinations; cite with dates"
+  },
+  "end_use_baseline_kwh": {
+    "heating_cooling": 2400,
+    "hot_water": 1300,
+    "lighting": 400,
+    "appliances": 1100,
+    "gas_use_mj": 0,
+    "status": "placeholder",
+    "needs": "Energy assessor review; the original spec ignores gas for the conventional home; model electricity AND gas"
+  },
+  "efficiency": {
+    "hvac_eer_baseline": 3.1,
+    "hvac_eer_upgrade": 4.6,
+    "hot_water_cop_baseline": 1.0,
+    "hot_water_cop_upgrade": 4.2,
+    "envelope_demand_factor_upgrade": 0.55,
+    "led_lighting_factor": 0.5,
+    "status": "from_spec_except_factors_marked_placeholder",
+    "needs": "envelope_demand_factor_upgrade and led_lighting_factor are placeholders"
+  },
+  "solar": {
+    "yield_kwh_per_kw_year": 1424,
+    "self_consumption_unmanaged": 0.25,
+    "self_consumption_load_shifted": 0.6,
+    "max_kw": 13.2,
+    "status": "from_spec",
+    "needs": "Cite a recognised Sydney irradiance source"
+  },
+  "water": {
+    "conventional_kl_per_year": 200,
+    "rainwater_offset_kl_per_year_5kl_tank": 85,
+    "status": "from_spec",
+    "needs": "Model offset from catchment, rainfall (cite BoM) and non-potable demand; limit by tank size"
+  },
+  "maintenance": {
+    "conventional_pct_of_capex": 0.005,
+    "sustainable_pct_of_capex": 0.0036,
+    "status": "from_spec_legacy_only",
+    "needs": "Itemised mode should use per-measure maintenance deltas"
+  },
+  "disposal": {
+    "allowance_per_m2_gfa": 150,
+    "salvage_per_m2_gfa": 0,
+    "status": "placeholder",
+    "needs": "Source from QS rates; required input"
+  },
+  "incentives": [],
+  "incentives_note": "Empty on purpose. Research current federal (STC) and NSW schemes from official sources, date each, apply as a separate line.",
+  "allowances": {
+    "builder_margin_overheads": 0.15,
+    "gst": 0.1,
+    "contingency": 0.0,
+    "waste": {
+      "insulation": 0.07,
+      "sarking": 0.07,
+      "default": 0.05
+    },
+    "labour_per_hour": {
+      "insulation_installer": 85,
+      "carpenter": 95,
+      "plumber": 110,
+      "electrician": 105
+    },
+    "delivery_allowance_per_job": 150,
+    "status": "placeholder",
+    "needs": "Owner/QS to confirm; cite published trade rates"
+  },
+  "price_pipeline": {
+    "ttl_class_a_hours": 24,
+    "ttl_class_b_days": 7,
+    "min_sources": 3,
+    "change_guard_pct": 25,
+    "max_cached_age_days": 30,
+    "sanity_bounds_factor": [
+      0.4,
+      2.5
+    ],
+    "refresh_limit_per_ip_per_hour": 5,
+    "refresh_limit_per_day_global": 200,
+    "tavily_daily_cap": 150,
+    "tavily_monthly_cap": 4000,
+    "gemini_daily_cap": 500,
+    "status": "placeholder",
+    "needs": "Set caps to match the actual API plans; QS to replace sanity bounds with real bounds before enabling live updates"
+  },
+  "reference_house": {
+    "gfa_m2": 220,
+    "storeys": 1,
+    "bedrooms": 4,
+    "bathrooms": 2,
+    "garage": "double"
+  },
+  "build_rates_per_m2": {
+    "project_home": 2400,
+    "custom_mid": 3200,
+    "architectural": 4200,
+    "status": "from_spec",
+    "needs": "Cite Rawlinsons or equivalent; include GST statement"
+  },
+  "legacy_preset": {
+    "capex_conv": 528000,
+    "capex_sust": 580800,
+    "replacements_conv": {
+      "12": 1800,
+      "15": 3500
+    },
+    "replacements_sust": {
+      "10": 750,
+      "12": 2200,
+      "15": 3800
+    },
+    "expected_break_even_year": 37,
+    "expected_net_benefit_approx": 2987,
+    "note": "Regression fixture only. Never present as the default experience."
+  },
+  "energy_model": {
+    "status": "placeholder",
+    "source": "Developer implementation assumptions; energy assessor review required",
+    "envelope_factors": {
+      "insulation": 0.8,
+      "glazing": 0.85,
+      "airtightness_shading": 0.8
+    },
+    "controls_appliance_factor": 0.95,
+    "fixture_water_factor": 0.85,
+    "rainfall_m_per_year": 0.8,
+    "rainwater_capture_factor": 0.8,
+    "max_non_potable_share": 0.5
+  },
+  "missing_upgrade_premiums": {
+    "status": "placeholder",
+    "source": "Developer placeholders; replace with builder quotes",
+    "water_fixtures": 600,
+    "lighting": 550,
+    "smart_controls": 1000,
+    "sustainable_materials": null
+  },
+  "price_range_factors": {
+    "status": "placeholder",
+    "low": 0.8,
+    "median": 1,
+    "high": 1.2
+  }
+}

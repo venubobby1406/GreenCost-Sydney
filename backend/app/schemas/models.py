@@ -8,7 +8,7 @@ Growth = Annotated[float, Field(ge=-0.2, le=0.3)]
 
 
 class StrictModel(BaseModel):
-    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False, str_strip_whitespace=True)
 
 
 class Material(StrictModel):
@@ -30,6 +30,23 @@ class Replacement(StrictModel):
 
 
 class Project(StrictModel):
+    mode: Literal["itemised", "literature"] = "literature"
+    preset: Literal["code_minimum_7star", "legacy_6star"] = "code_minimum_7star"
+    assumption_version: Literal["2026-10-v1"] = "2026-10-v1"
+    selected_measures: list[str] = Field(default_factory=list, max_length=11)
+    code_required_measures: list[str] = Field(default_factory=list, max_length=11)
+    price_overrides: dict[str, Money] = Field(default_factory=dict, max_length=11)
+    quantity_overrides: dict[str, Money] = Field(default_factory=dict, max_length=30)
+    price_scenario: Literal["low", "median", "high"] = "median"
+    solar_kw: float = Field(default=6.6, ge=0, le=13.2)
+    tank_kl: float = Field(default=5, gt=0, le=50)
+    gas_mj: Money = 0
+    gas_rate: Money = 0
+    gas_daily: Money = 0
+    gas_note: str = Field(default="", max_length=300)
+    feed_in_rate: Money = 0.05
+    terminal_confirmed: bool = False
+    rates_snapshot: dict[str, Money] | None = None
     name: str = Field(default="Sydney project", min_length=1, max_length=120)
     postcode: str = Field(pattern=r"^2\d{3}$")
     zone: Literal["Ausgrid", "Endeavour Energy", "Essential Energy"]
@@ -91,6 +108,34 @@ class Project(StrictModel):
 
     @model_validator(mode="after")
     def coherent(self):
+        from backend.app.services.catalogue import catalogue
+        known = {m["id"] for m in catalogue()}
+        if self.preset == "legacy_6star" and self.mode == "literature":
+            if (self.area != 220 or self.area_unit != "m²" or self.conventional_cost != 528000
+                    or self.sustainable_cost != 580800 or self.solar_kw != 6.6 or self.gas_mj
+                    or self.energy_kwh != 5200 or self.water_kl != 200 or self.replacements
+                    or self.cost_mode != "quick" or self.historical_index or self.other_annual
+                    or self.tariff_mode != "user" or self.electricity_rate != .325
+                    or self.electricity_daily != 1.5 or self.water_rate != 3.41
+                    or self.water_fixed_annual != 987.16
+                    or (self.rates_snapshot is not None and self.rates_snapshot != {
+                        "electricity_rate": .325, "electricity_daily": 1.5,
+                        "water_rate": 3.41, "water_fixed": 987.16})
+                    or "rainwater" not in self.features
+                    or any((self.disposal_conventional, self.disposal_sustainable, self.residual_conventional, self.residual_sustainable))):
+                raise ValueError("The legacy preset is a fixed regression example. Switch to the current baseline to edit physical inputs.")
+        if any(m not in known for m in self.selected_measures + self.code_required_measures + list(self.price_overrides)):
+            raise ValueError("Unknown upgrade. Choose a measure from the catalogue.")
+        if len(set(self.selected_measures)) != len(self.selected_measures):
+            raise ValueError("An upgrade can be selected only once.")
+        if self.mode == "itemised" and not self.terminal_confirmed:
+            raise ValueError("Confirm disposal and salvage inputs, including an explicit choice of zero.")
+        if self.mode == "itemised" and self.sustainable_cost is not None:
+            raise ValueError("Itemised mode uses individual upgrade quotes. Use literature mode for a whole-building quote.")
+        if self.gas_mj and (not self.gas_rate or not self.gas_note.strip()):
+            raise ValueError("Enter your gas usage rate and bill reference when modelling gas.")
+        if self.rates_snapshot is not None and set(self.rates_snapshot) != {"electricity_rate", "electricity_daily", "water_rate", "water_fixed"}:
+            raise ValueError("A tariff snapshot needs all four utility rates.")
         if self.conventional_cost == 0:
             raise ValueError("Construction total must be positive; leave it blank to use AUD/m².")
         if self.cost_mode == "quick" and not (self.conventional_cost or self.cost_per_m2):
@@ -115,7 +160,7 @@ class Project(StrictModel):
                 or not self.tariff_note.strip()
             ):
                 raise ValueError("Supply all four utility rates and a source note for custom tariffs.")
-        if self.performance_source == "research":
+        if self.performance_source == "research" and self.mode == "literature":
             if self.energy_reduction and not any(
                 x in self.features for x in ("solar", "insulation", "glazing", "hvac", "hot_water", "lighting")
             ):

@@ -1,3 +1,5 @@
+> Historical checks for an earlier implementation. See PRODUCTION_VERIFICATION.md for current delivery checks.
+
 # Prototype verification — 2 October 2026
 
 Completed checks:

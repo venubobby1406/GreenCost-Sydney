@@ -1,184 +1,176 @@
 # GreenCost Sydney
 
-A single-page building life-cycle cost comparison with an animated Three.js scene, a guided form, a research companion, PDF retrieval through **Chroma**, **Tavily** web context and **Gemini** explanations.
+Compare the whole-life cost of a conventional and upgraded building over **30, 40 and 50 years**. GreenCost uses Python for all financial calculations and Three.js for the animated building. Gemini and Tavily are optional.
 
-## Start locally
+**No SQL, NoSQL, vector database, database account, or database installation is required.** Research is kept in ordinary files. Recent comparisons stay in your browser. Local installations can also save JSON reports.
 
-Requires Python 3.12+ and Node.js 20.9+.
+There are two main pages: **your comparison** and **method & evidence**. The existing `/sources` address redirects to the second page.
+
+## Run it on Windows
+
+Install [Python 3.12+](https://www.python.org/downloads/) and [Node.js 22 LTS or newer](https://nodejs.org/). Open PowerShell in this project folder, then run:
 
 ```powershell
 .\scripts\start-local.ps1
 ```
 
-The script installs missing dependencies, updates the local Chroma index incrementally, and starts the backend on `127.0.0.1:8000` and frontend on `127.0.0.1:3000`. Press Ctrl+C to stop both services. You can supply `-Python 'C:\path\to\python.exe'`.
+The first run installs dependencies and prepares the supplied research PDFs. Later runs reuse them. Open **http://127.0.0.1:3000**. Keep the terminal open; press **Ctrl+C** to stop both services.
 
-For manual setup, run these from the project root:
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements-lock.txt
-.\.venv\Scripts\python.exe scripts\ingest_knowledge.py
-.\.venv\Scripts\python.exe -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
-```
-
-In a second terminal:
+For the optimised production build:
 
 ```powershell
-cd frontend
-npm ci
-npm run dev
+.\scripts\start-local.ps1 -Production
 ```
 
-Open **http://127.0.0.1:3000**. Choose **Explore a sample**, continue through the three form steps and choose **Analyse my building**. Results appear on the same page. The API docs are at `http://127.0.0.1:8000/docs`.
+The same script accepts `-SetupOnly` to install without starting, or `-Python 'C:\path\to\python.exe'` if Python is not on your PATH. If PowerShell blocks scripts, run `powershell -ExecutionPolicy Bypass -File .\scripts\start-local.ps1` for this invocation.
 
-Stop the development server before running `npm run build`: development and production builds share `.next`.
+No API key is needed to calculate, inspect evidence, compare scenarios, or export reports.
 
-## Connect Gemini and Tavily
+## Example 1: explore the supplied house
 
-Copy `.env.example` to `.env` if `.env` does not exist. Add:
+1. Choose **Explore a sample** or **Fill sample**.
+2. Continue through **Your building**, **Costs & consumption**, and **Your greener alternative**.
+3. Inspect the selected insulation, solar and rainwater upgrades. Prices say **Indicative** because they are not verified builder quotes.
+4. Review disposal and salvage, then choose **Analyse my building**.
+5. Switch between 30, 40 and 50 years, examine the contribution chart and sensitivity table, and download PDF, HTML or CSV.
+
+The sample is an illustration. Do not reuse its costs or consumption as measurements of your own house.
+
+## Example 2: use your own project
+
+Choose **Start fresh**, then enter your Greater Sydney postcode and the distributor shown on your bill. For a practice example, use 2000, Ausgrid, 220 m², one floor, a $600,000 construction budget, 5,200 kWh electricity and 200 kL water annually. These are **example inputs**, not construction benchmarks.
+
+In itemised mode, select solar. Open **Price source & your quote** and enter your builder's installed **difference** versus the baseline, for example $6,500. Set the array size to 6.6 kW. Enter disposal costs, for example $33,000 in each case, and explicitly confirm any zero salvage amounts. These end-of-life values are also illustrative.
+
+Choose **Analyse my building**. Use **Refine your inputs** to try another quote or discount rate. A positive signed saving means the upgraded scenario costs less; a negative saving means it costs more. The app does not force a sustainable-building saving.
+
+Choose **Literature scenarios** to explore percentage assumptions instead. Low / Mid / High scenarios use the package's research ranges and reduce variable utility charges, while retaining fixed charges.
+
+## Save, reopen and share
+
+- **Save project** downloads a JSON file containing inputs, captured rates and results. Use **Open saved project** to reload the inputs and recalculate.
+- **Save current inputs** works before analysis; unfinished inputs must be completed before they can be reanalysed.
+- **Share** copies a URL containing inputs and captured utility rates. The recipient opens it and chooses **Analyse**. This reproduces financial results for assumption version `2026-10-v1`; optional AI wording may differ.
+- **Recent comparisons on this device** retains the last three results when browser storage is available. **Clear device history** removes them.
+
+Share links and downloaded files contain project details. Do not put private information in the project name or share a link publicly unless you intend to disclose its inputs. With browser storage disabled or full, calculations and downloads still work.
+
+## Use free Gemini and Tavily keys
+
+The setup script creates `.env` only if it does not already exist. Add keys to that file, not frontend files:
 
 ```dotenv
-GEMINI_API_KEY=your-google-ai-studio-key
-GEMINI_MODEL=gemini-3.5-flash
-TAVILY_API_KEY=your-tavily-key
-RAG_EMBEDDING_MODEL=local-hash-v1
+GEMINI_API_KEY=your-key
+GEMINI_MODEL=gemini-2.5-flash
+TAVILY_API_KEY=your-key
+TAVILY_DAILY_CAP=10
+TAVILY_MONTHLY_CAP=200
+GEMINI_DAILY_CAP=20
+GEMINI_MONTHLY_CAP=400
 ```
 
-Restart the backend after editing. The Gemini model is configurable; select a model available to your API account. API keys stay server-side and are never returned by the health endpoint or embedded in frontend code.
+Restart after editing. Choose a model available in your Gemini account. Free services have quotas; timeouts, quota errors and unavailable models fall back to calculated explanations. A normal online comparison makes at most one search and one explanation call. Follow-up qualitative questions may make an additional explanation call. Financial what-ifs and exports make no external calls.
 
-- [Gemini API documentation](https://ai.google.dev/api/generate-content)
-- [Google AI Studio API keys](https://aistudio.google.com/api-keys)
-- [Tavily search documentation](https://docs.tavily.com/documentation/api-reference/endpoint/search)
-- [Chroma Python client documentation](https://docs.trychroma.com/reference/python/client)
+Gemini sees non-identifying scenario facts and selected research excerpts. Tavily receives a general building-feature search. Neither provider controls arithmetic or official tariff values. Do not upload confidential research when optional AI is enabled.
 
-Without keys, financial calculations and local PDF retrieval work normally. The page explicitly identifies template explanations and missing or unavailable research connections. No API credentials were supplied or used during verification; external provider contracts were tested with mocked responses.
+Local caps count requests, not credits, and are persisted as JSON. **Serverless instances cannot share a global counter without shared storage.** Hosted AI is therefore off by default. Keep account-level quotas in place before enabling it.
 
-## User experience
+Official references: [Gemini pricing](https://ai.google.dev/gemini-api/docs/pricing), [Tavily pricing](https://help.tavily.com/articles/8816424538-pricing), [Vercel Hobby rules](https://vercel.com/docs/plans/hobby).
 
-Everything is on one landing page: introduction, animated architectural scene, workflow explanation, project form, research companion, results, methodology and evidence. Old methodology/source URLs redirect to the evidence section.
+## Deploy on Vercel
 
-The form has three guided steps:
+Vercel Hobby is for personal, non-commercial use and is subject to limits. It can suit an academic demo. Commercial use requires a suitable paid plan. The project is configured for **two Vercel projects from the same repository**; no database service is involved.
 
-1. Building location, distributor and geometry.
-2. Construction budget or detailed materials, annual consumption and optional custom tariffs.
-3. Sustainable features, quote/premium, combined performance and study horizon.
+**1. Backend project**
 
-Financial assumptions, replacement schedules, material service lives and terminal values remain available behind expandable controls. **Start fresh** creates independent inputs. **Fill sample** explicitly loads illustrative values. Geometry, feature selections and system names do not invent prices or performance. Commercial projects select custom utility pricing.
+- Import the repository into Vercel.
+- Use the repository root as the Root Directory and **FastAPI** as the framework. Root `vercel.json` and `pyproject.toml` identify `backend.app.main:app` and build the research index.
+- Set `SAVE_LOCAL_ANALYSES=false` and `ENABLE_HOSTED_AI=false`.
+- Set `ALLOWED_ORIGINS` to the exact frontend URL once it is available, such as `https://greencost-example.vercel.app`. Multiple explicit URLs can be comma separated; wildcards are not accepted.
+- Deploy and check `https://YOUR-BACKEND.vercel.app/api/health`. It should show `status: ok`, `rag_ready: true` and `vector_db: none`.
+- In both projects, choose deployment protection settings appropriate for a public app. A backend protected by a login wall cannot serve the frontend's public API proxy.
 
-The Three.js scene has interactive floor and solar controls, an animated research companion and a WebGL fallback. Motion respects the user's reduced-motion setting. The companion panel reports real backend progress events rather than timer-based pretend progress.
+**2. Frontend project**
 
-## Analysis architecture
+- Import the same repository a second time. Set Root Directory to **frontend**, framework **Next.js**, and Node.js **22** or newer.
+- Add `GREENCOST_API_URL=https://YOUR-BACKEND.vercel.app` without a trailing slash. This is a server-side proxy setting, not an API key.
+- Deploy. Add the resulting frontend URL to the backend's `ALLOWED_ORIGINS`, then redeploy the backend.
+- Run the sample comparison and test PDF export, a share link and the methodology page.
 
-```text
-Single Next.js page
-  → /api proxy
-  → FastAPI / Pydantic validation
-  → LangGraph workflow
-      validate inputs
-      → retrieve project-specific PDF passages from Chroma
-      → optional Tavily official-domain search
-      → validate applicable utility rates
-      → build conventional and sustainable scenarios
-      → Python LCC calculations for 30 / 40 / 50 years
-      → 48 sensitivity combinations
-      → deterministic financial summary + grounded Gemini interpretation
-  → SQLite saved result
-  → inline charts, explanations, evidence, HTML report and CSV
-```
+To use optional free APIs on Vercel, add the two keys and `GEMINI_MODEL` to the **backend project only**. Set `ENABLE_HOSTED_AI=true` only after configuring provider quotas and host abuse protection. Per-instance rate limits and counters are not a distributed spending guarantee. Preview frontend domains must also be explicitly allowed.
 
-The browser reads server-sent events from `POST /api/analyse/stream`. Stages and the final saved result are emitted as JSON events. The original `POST /api/analyse` remains available for non-streaming API clients.
+Vercel has no durable local filesystem. Uploaded PDFs are disabled there; add PDFs locally, run `scripts/ingest_knowledge.py`, and redeploy. Results are retained in the browser or exported files. Server-side report/chat routes rebuild validated inputs with captured rates, rather than relying on a saved server ID. No hosted deployment has been performed or verified against your account.
 
-Gemini receives non-identifying scenario facts and bounded retrieved excerpts. The analysis interpretation uses qualitative language and supplied citation labels such as `[S1]`. Invented numbers, monetary claims and unknown citation references are rejected; calculated summaries remain available. The financial model never delegates arithmetic to Gemini. Missing keys, timeouts, provider errors and unusable responses have explicit fallback status.
+Official deployment guide: [FastAPI on Vercel](https://vercel.com/docs/frameworks/backend/fastapi).
 
-Tavily receives a general query based on building type and selected features, with up to four results and no generated answer. The allowed domains are AER, Sydney Water, ABS, NSW Planning and Planning Portal. External snippets are labelled **WEB_RESEARCH** and support explanation only. They never overwrite tariff records or formulas. Users can disable web research in the form. Normal analysis makes at most one Tavily search and one Gemini explanation request. Non-numerical follow-up questions can make a Gemini request using local retrieval and saved web context; deterministic what-ifs do not make external calls.
+## What the model includes
 
-## PDF knowledge base and Chroma
+- Capital at year zero; base-year annual costs escalated and discounted at year end.
+- Electricity usage and fixed supply, water usage and fixed service charges, maintenance, replacements, other annual costs, disposal and salvage.
+- Itemised envelope/HVAC/hot-water interactions; indicative solar self-use and exports; gas space-heating consumption with user tariffs. Literature mode applies energy reductions to variable electricity/gas costs only.
+- Rectangular-plan quantity estimates, roof feasibility, drawing-quantity overrides, individual quotes and already-required measures.
+- Three horizons, 48 discount/escalation sensitivity cases, indicative price ranges, category and marginal measure contributions, equivalent annual cost.
+- A separate legacy regression preset, preserving the original engine's Year 37 break-even and $2,986.68 net benefit. Its historical assumptions are not current official prices.
 
-Original research PDFs live in `data/knowledge/`. Their passages are labelled **PROJECT_RESEARCH**, with source filename, original page, document hash and deterministic chunk identifier. Official JSON records and regulatory context are indexed with separate categories.
+The current app's base-year escalation convention and the package's legacy year-one convention differ. They are explicitly separated and tested. First break-even may reverse later. See [docs/METHODOLOGY.md](docs/METHODOLOGY.md) and the method page for formulas and limits.
 
-```powershell
-.\.venv\Scripts\python.exe scripts\ingest_knowledge.py
-```
+## Review before public launch
 
-The persistent vector database is `data/chroma/`. Changed chunks are upserted, unchanged embeddings are reused, and obsolete chunks are deleted. The manifest records the embedding configuration and source hashes. The old `data/faiss/` files are retained as legacy artifacts and are no longer read by the application.
+The software runs and is tested, but it is **not a certified cost or energy model**. The package includes placeholder assumptions. Public launch as an authoritative planning tool still requires the owner/supervisor and appropriate building professionals to review them.
 
-Use **Add a PDF** on the landing page to upload a text-based, unlocked PDF up to 10 MB and 200 pages. The backend sanitizes filenames, preserves page citations and indexes the document. Scanned/image-only PDFs need OCR before upload. Uploaded documents are stored locally; retrieved excerpts may be sent to Gemini when connected. This local prototype has no upload deletion or account permissions interface.
+The supplied package's **full official Greater Sydney postcode/network/climate concordance and supplier price pipeline are not complete in this delivery**. The interface asks users to select the actual electricity distributor from their bill, uses clearly labelled indicative upgrade differences, and accepts project quotes. It does not guess a climate zone or claim live supplier prices. Supplier terms, paired baseline/upgrade product specifications, verified unit prices, and incentive eligibility must be approved before live price updates are implemented/enabled. These outstanding requirements are recorded in `DECISIONS.md`.
 
-Default embeddings use normalized token/bigram feature hashes, requiring no model download. They provide lexical similarity rather than transformer semantic understanding. For semantic retrieval:
+The provisional code-minimum baseline and public disclaimer/privacy/terms wording also need owner sign-off. Selecting upgrades is not a BASIX or NatHERS assessment. Site conditions, orientation, shading, code requirements, installation quality and network approvals need project-specific review.
 
-1. Install `sentence-transformers` into `.venv`.
-2. Download a model once, outside the normal workflow.
-3. Set `RAG_EMBEDDING_MODEL` to the model's local directory.
-4. Run `scripts/ingest_knowledge.py --force` and restart the backend.
+## Verify the project
 
-Local model loading uses `local_files_only=True`. [Chroma](https://docs.trychroma.com/reference/python/client) stores explicit embeddings; its automatic embedding downloads are disabled.
-
-## Financial model
-
-```text
-LCC = C0 + Σ (Energy + Water + Maintenance + Replacement + Other)t / (1+r)^t
-         + DisposalN / (1+r)^N − ResidualN / (1+r)^N
-```
-
-- Capital is year zero; subsequent expenditure is at year end.
-- Base prices escalate t times in year t. Use consistent nominal escalation and discount rates.
-- Electricity includes grid usage and daily supply. Solar self-use belongs in the consumption assumptions; export income is excluded.
-- Water reductions affect variable consumption. Applicable fixed charges stay unchanged between scenarios and are normalized from the provider's 92-day basis to 365 days.
-- An explicit construction total overrides AUD/m². A zero construction total is rejected; leave it blank to use a rate.
-- Detailed construction includes material quantity × price plus remaining scope. Material maintenance is additional to building maintenance.
-- Sustainable construction uses an explicit quote or one editable package premium.
-- Replacements occur at entered intervals strictly before retirement. Detailed material replacements apply to both scenarios unless explicit scenario-specific rows are supplied; avoid duplicates.
-- Disposal and residual values are base-year equivalents escalated to each horizon's endpoint. Residual value is a credit; none is inferred.
-- Savings = conventional LCC − sustainable LCC. Negative savings means sustainable costs more.
-- First discounted break-even can later reverse. Inspect annual cash flows.
-- Computation retains full precision; displayed values are rounded. CSV preserves numerical precision.
-- Historical ABS indexation uses a matching-series index ratio. PPI is never AUD/m².
-
-See `docs/METHODOLOGY.md` for the independent audit example and boundaries.
-
-## Tariff lifecycle
-
-`data/verified/` contains the existing 2026–27 residential tariff register and June 2026 construction index. Official pricing must be effective on the project's reference date. Commercial projects require all four custom prices and a source note. The supplied register is not a live retail quote or an automatic assessment of metering, catchments or drought conditions.
-
-```powershell
-.\.venv\Scripts\python.exe scripts\update_sources.py --offline
-.\.venv\Scripts\python.exe scripts\update_sources.py --direct
-.\.venv\Scripts\python.exe scripts\update_sources.py
-.\.venv\Scripts\python.exe scripts\ingest_knowledge.py
-```
-
-The administrator refresh remains separate from analysis research. It conservatively verifies the existing dated schema against original pages, retains the previous register on failure, and uses atomic writes. A new financial year or price table requires a reviewed extraction rule and dated record. Online contextual search does not silently update financial values.
-
-## Persistence and API
-
-SQLite stores complete analysis snapshots in `data/greencost.sqlite3`, including inputs, selected rates, calculations, source records, retrieved evidence and provider status. Chat what-ifs reuse saved rates. Saved reports remain reproducible after cache changes.
-
-| Route | Purpose |
-|---|---|
-| `GET /api/health` | Chroma readiness, document counts, connection flags; no secrets |
-| `GET /api/demo` | Labelled sample project |
-| `GET /api/sources` | Cached source register |
-| `POST /api/knowledge/pdf?filename=research.pdf` | Raw PDF upload and indexing |
-| `POST /api/analyse` | Calculate and save |
-| `POST /api/analyse/stream` | Real analysis stages and saved result |
-| `GET /api/analyses/{id}` | Retrieve saved result |
-| `POST /api/analyses/{id}/chat` | Grounded questions and supported what-ifs |
-| `GET /api/analyses/{id}/report?years=40` | Self-contained HTML report |
-| `GET /api/analyses/{id}/cashflows?years=40` | Full-precision CSV |
-
-Reports include PDF/web reference labels, excerpts and complete input records. Open the downloaded HTML and use Print → Save as PDF. There is no saved-analysis history screen; saved results remain accessible through their API identifier.
-
-## Verification
+From the project root:
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -q
 .\.venv\Scripts\python.exe -m ruff check backend scripts
 cd frontend
-npm run typecheck
 npm run lint
+npm run typecheck
 npm run build
+npm audit
 ```
 
-The current suite includes financial audits, source policy, PDF upload, Chroma incremental updates, Gemini request/response contracts, hallucinated money rejection, Tavily allowlists, streamed stages, saved-rate what-ifs and offline fallback. See `docs/REWRITE_VERIFICATION.md` for the rewrite verification record. Earlier checks in `docs/VERIFICATION.md` describe the previous UI and FAISS implementation.
+Stop the frontend before rebuilding; development and production share `.next`. GitHub Actions runs backend and frontend checks on pushes and pull requests. Live provider requests use mocked contracts in tests; no real key or supplier price was used to verify this delivery.
 
-This is an indicative academic model. It is not a QS quotation, calibrated energy simulation or compliance certificate. It binds to loopback and has no authentication; public deployment would require authentication, upload policies and operational hardening.
+## Project structure
+
+```text
+backend/app/calculations/   financial engine, legacy fixture, energy and takeoff
+backend/app/schemas/        validated input models
+backend/app/services/       analysis, JSON files, PDF/HTML reports, API budgets
+backend/app/rag/            local PDF passage retrieval (not a database)
+frontend/app/               comparison and method/evidence pages
+frontend/components/        guided form, upgrade picker, Three.js and charts
+data/regions/sydney_nsw/    supplied region catalogue and indicative assumptions
+data/verified/             dated official tariff/index records
+data/knowledge/            all four supplied research PDFs and context
+data/research_index/        generated JSON passage files
+docs/package/              original ZIP instructions, preserved as reference
+scripts/                   setup, knowledge ingestion, explicit tariff verification
+```
+
+Legacy `data/faiss/` and earlier verification documents are retained as historical artifacts and are not application storage. SQLite/Chroma are not imported, installed by the lockfile, or used.
+
+To update official tariff records, run `scripts/update_sources.py --offline` for validation, or its normal Tavily mode for conservative verification. Direct scraping is disabled; no new page copies are saved. A new financial year requires reviewed dated records rather than extrapolating an expired official tariff.
+
+To add a region later, create a new `data/regions/<region>/` folder with reviewed assumptions, catalogue and location data, then explicitly add a supported region identifier and tariff loader. The current release intentionally supports Sydney only; copying a folder alone does not enable another city.
+
+## Troubleshooting
+
+**Backend not connected:** keep the startup terminal open. Check `backend-error.log`, then restart the script.
+
+**Port already in use:** stop the previous GreenCost terminal with Ctrl+C, or close the application using port 3000/8000. The script does not terminate unrelated programs.
+
+**Tariffs expired:** choose your own utility rates and enter a bill reference, or have the administrator review a new dated official record.
+
+**Solar too large:** reduce the array or override roof area from your drawings. An override is an estimate, not network approval.
+
+**PDF upload rejected:** use a readable, unlocked, text-based PDF, at most 10 MB and 200 pages. Scans need OCR. Hosted deployments use a read-only library.
+
+**Report or chat fails on Vercel:** verify the backend URL, origin allow-list, deployment protection and backend function logs. Do not put provider keys in the frontend.

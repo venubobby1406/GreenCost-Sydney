@@ -2,6 +2,12 @@
 testpaths = ["backend/tests"]
 pythonpath = ["."]
 
+[tool.vercel]
+entrypoint = "backend.app.main:app"
+
+[tool.vercel.scripts]
+build = "python scripts/ingest_knowledge.py"
+
 [tool.ruff]
 target-version = "py312"
 line-length = 120
