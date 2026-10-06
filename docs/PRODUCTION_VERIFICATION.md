@@ -1,37 +1,39 @@
-# GreenCost verification — 5 October 2026
+# GreenCost local verification — 6 October 2026
 
-This records checks of the local production build. It is not a claim that every ZIP acceptance item, professional validation or hosted launch is complete. Outstanding scope is listed in `../DECISIONS.md`.
+The agreed Sydney interface rebuild is implemented and checked locally. This records evidence for this revision; it does not certify real construction estimates or a hosted deployment.
 
 ## Automated checks
 
-- `python -m pytest -q`: **71 passed**. Covers original financial behaviour, independent cash-flow examples, locked legacy fixture, takeoff, all eleven measures, interactions/contribution reconciliation, code-required and quote logic, gas fixed charges, captured rates, stateless Vercel reports/chat, input limits, origins, incremental file retrieval and mocked provider contracts.
-- `python -m ruff check backend scripts`: passed.
-- `python -m pip check`: no broken requirements.
-- `npm run lint` and `npm run typecheck`: passed.
-- `npm run build`: passed; comparison and methodology routes prerendered.
-- Clean `npm ci`: 373 packages installed, **zero reported vulnerabilities**. `npm audit --audit-level=high` also reports zero known vulnerabilities. This is an advisory snapshot, not a guarantee against undiscovered issues.
-- `scripts/start-local.ps1 -SetupOnly`: passed; locked dependencies and eight-document / 73-passage index prepared.
-- `scripts/start-local.ps1 -Production`: built and started both services successfully. Ports are checked before dependency updates; existing servers are not terminated by the setup script.
+- `.venv\Scripts\python.exe -m pytest -q -p no:cacheprovider --basetemp tmp/pytest-client-final`: **81 passed**. Includes the original financial regression suite and independent budget-range recalculations, editable allocation reconciliation, incomplete draft validation, comparable installed quotes (including cheaper upgrades), removed PDF upload, safe supplier URLs, GST/unit/ambiguity rejection, mocked Tavily raw-page extraction and metadata-only caching. New tests verify the utility-rate preview against the calculation engine and reject truncated or oversized Gemini responses while retaining calculated explanations.
+- Python Ruff: passed. Python dependency check: no broken requirements.
+- Frontend ESLint and TypeScript: passed.
+- Final `npm run build`: passed after the refinement; home, comparison and methodology routes prerendered. Production server starts successfully on port 3000, FastAPI on port 8000.
+- Next prints a non-fatal framework ESLint plugin configuration notice. Explicit TypeScript, React and hooks lint checks pass.
 
-Next prints a non-fatal notice that its framework ESLint plugin is not configured. The project runs explicit TypeScript/React/hooks checks; the old lint configuration dependency tree was removed to resolve its audit findings. npm also reports the pinned ESLint 9 version's support notice. These notices do not fail the checks, but future supported dependency updates should be reviewed.
+## Browser and report evidence
 
-## Browser and export checks
+- Home contains the introduction, interactive building and a Start comparison link. The calculator and results are on `/compare`; imports and browser history are grouped under My projects.
+- Missing required fields show inline reasons and focus the first invalid input. A reversed budget range focuses its upper bound. Field help works through a selectable info button. The review summary provides Edit links before calculation.
+- The Three.js model visibly renders different three- and four-floor buildings; its roof and camera follow the floor count. Floor controls disable at their bounds.
+- The selected Ausgrid reference rates were shown before calculation: electricity AUD 0.3314/kWh and AUD 1.66/day, water AUD 3.41/kL and AUD 859.06/year for the tested residential water/wastewater connections, without stormwater. These match the backend tariff function, not a retailer quotation.
+- PDF and Save project actions produce separate temporary success notices. My projects and the review/results flow were checked at 390 × 844; the page has no horizontal overflow.
+- The optimized production build restored the saved comparison through My projects and reproduced AUD 22,851 savings and Year 8 crossover for the checked scenario. Its final provider call used the calculated explanation after Gemini text failed validation; Tavily succeeded. The provider status and research retry control were visible. No browser warnings or errors were recorded. Fast scrolling to the bottom and back to the top kept hero content visible (opacity 1) and the four-floor canvas rendered.
 
-- Sample guided input completes and returns conventional AUD 961,152.550138, sustainable AUD 936,347.312021, signed savings AUD 24,805.238117 and first break-even year 10 at the sample's 40-year assumptions. Rounded values shown in the UI agree with server results.
-- Upgrade estimates, dated indicative provenance, uncertainty ranges, category contributions and individual marginal contributions render.
-- Arrow-key tab navigation selects sensitivity and displays its calculated matrix.
-- Electricity-growth what-if at 5% returns a recalculated AUD 40,756 saving (rounded), agreeing with the matrix; the original result remains available.
-- Desktop layout checked at 1280 × 900, mobile at 390 × 844. Mobile document width does not exceed viewport. Temporary viewport overrides were reset.
-- Browser text checked for corrupted UTF-8 punctuation after repair. No console errors observed in the final preview.
-- The second method/evidence page loads dated source records and regional assumptions, with model boundaries and privacy wording.
-- Stateless HTML export verified with current upgrade/contribution sections. PDF export rebuilt validated inputs and captured rates, with no external calls.
-- The browser PDF button confirms a completed download. Sharing confirms a copied-link status in the interface; financial snapshot reproduction is separately tested in the API suite.
-- The ten-page sample PDF was rendered with Poppler and every page inspected. Tables repeat headers; source headings stay with content; no blank pages, clipping or overlapping text found. Full-precision input values are retained; summary amounts are rounded for presentation.
+- The three-step form completes a 220 m², AUD 600,000–800,000 budget-range comparison with 5,200 kWh/year and 200 kL/year. Low, midpoint and high results are independently calculated for all three horizons.
+- The observed 40-year headline for the tested form is conventional AUD 980,995, sustainable AUD 958,143, signed saving AUD 22,851 and first discounted crossover year 8 (rounded). These are scenario outputs, not a building quotation.
+- A number field can be cleared with Backspace and stays blank on blur. Intentional zero remains a separate value; zero utility use requires confirmation.
+- Monthly values are converted to annual consumption. An incomplete imported draft restores successfully with blank floor-area/occupant values and nullable material costs; it cannot be submitted as a completed analysis.
+- Desktop at 1280 × 900 and mobile at 390 × 844 were visually checked. Chart tooltip containment and wrapping controls fixed mobile horizontal overflow. Document widths do not exceed viewport widths.
+- Rapid jumps from top to bottom and back leave content visible, with hero opacity 1. The new Three.js architectural scene renders with solar, wood screens, trees and rainwater tank. Reduced-motion and WebGL fallback paths are implemented.
+- Final production browser console check returned no warnings or errors. The methodology page loads its sources and calculation boundaries.
+- PDF button reports a successful download. PDF and HTML report endpoints return 200 from captured validated inputs/rates without AI calls. An eleven-page report with the new six-category breakdown and budget-range table was rendered and every page inspected: repeated table headers and footers, no clipped or overlapping rows or blank pages. Material input records are split into separate rows so a large material list does not become one oversized row.
 
-Local review artifacts (ignored by Git): `output/GreenCost-desktop.jpg`, `output/GreenCost-mobile.jpg`, `output/GreenCost-sample-report.html`, and `output/pdf/GreenCost-sample-report.pdf`.
+Current client-review screenshots (ignored by Git): `output/GreenCost-client-production-home.png`, `output/GreenCost-client-production-results.png`, `output/GreenCost-client-review.png`, `output/GreenCost-client-results.png`, `output/GreenCost-client-3floors.png`, `output/GreenCost-client-4floors.png`, `output/GreenCost-client-mobile-results.png`, `output/GreenCost-client-mobile-projects.png`. The earlier report render remains at `output/pdf/GreenCost-rebuild-report.pdf`, with its full-page review at `output/pdf/rebuild-report-review.png`.
 
-## Limits of verification
+## Provider verification and practical limits
 
-No hosted Vercel account deployment, paid operation, supplier terms acceptance, live supplier extraction or real Gemini/Tavily call was performed. Provider tests mock API contracts and failures. Free-tier quotas and hosted protection must be checked by the owner.
+A real Tavily insulation search completed and returned three sources from the configured Australian supplier domains. None provided an unambiguous, tax-inclusive per-square-metre supply price; all correctly stayed **Quote required**, without overwriting estimates. Supplier results are cached for 24 hours; price checks are bounded by provider budgets and a retry cooldown. Automatic pricing is conditional on usable source evidence, not guaranteed for every material. Edited/deleted material rows retain category-correct lookup rather than using row position.
 
-The app uses manually selected distributors and indicative installed upgrade differences. The complete official location concordance, full paired supply/labour catalogue and cached-live supplier pipeline remain outstanding. The provisional building baseline, end-use assumptions and public-launch wording require owner/professional review. No error-free production guarantee or regulatory certification is made.
+During the 6 October browser flow, Gemini and Tavily requests both completed. The Gemini output exposed an unfinished-text case; the adapter now rejects non-STOP finishes and oversized text rather than displaying a cut-off paragraph, with regression tests. Explanation prompts request fewer words and allow a larger token budget for completion. Earlier diagnostics also observed provider HTTP 503. The app distinguishes provider busy, quota, permissions, incomplete output and model errors and keeps deterministic financial results available. A successful call does not establish consistent provider availability. The sandboxed local server may restrict outbound networking; a provider failure there is not proof of invalid keys.
+
+No Vercel deployment, supplier terms acceptance, public authentication/protection setup or professional validation was performed. The complete official postcode/distributor concordance and comprehensive paired supplier/labour catalogue remain outside this bounded implementation; users select their distributor and can supply comparable installed quotes. Budget allocations and rectangular-plan quantities are explicitly editable placeholders. Public launch requirements and host limits are described in the README and DECISIONS.

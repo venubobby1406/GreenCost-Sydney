@@ -207,6 +207,12 @@ def research_outputs(p, rates, periods):
     from backend.app.calculations.energy import model
     from backend.app.calculations.lcc import compare
     output = dict(assumption_version=p.assumption_version, price_snapshot_date=p.price_date.isoformat())
+    if p.budget_range:
+        output["budget_scenarios"] = {}
+        for label, cost in (("Low", p.budget_range[0]), ("Midpoint", sum(p.budget_range) / 2), ("High", p.budget_range[1])):
+            variant = p.model_copy(update={"conventional_cost": cost, "budget_range": None})
+            results = compute_periods(*scenarios(variant, rates))
+            output["budget_scenarios"][label] = {n: {"conventional": r["conventional"]["total_lcc"], "sustainable": r["sustainable"]["total_lcc"], "savings_aud": r["savings_aud"]} for n, r in results.items()}
     if p.mode == "itemised":
         measures, geometry = measure_costs(p)
         selected = [m["id"] for m in measures if not m["code_required"]]

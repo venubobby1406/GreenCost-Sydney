@@ -51,6 +51,13 @@ def pdf_report(result, years):
                                  ["First discounted break-even", "Not reached" if r["break_even_year"] is None else f"Year {r['break_even_year']}"],
                                  ["Equivalent annual sustainable cost", money(r["sustainable"]["eauc"])]], [300, 205])
     story.append(paragraph(f"Under the stated assumptions, the sustainable case has a {abs(r['savings_percent']):.2f}% {'lower' if r['savings_aud'] >= 0 else 'higher'} modelled whole-life cost. Indicative inputs are not verified quotations."))
+    if result.get("budget_scenarios"):
+        heading("Construction budget range")
+        story.append(paragraph("Headline results use the midpoint. Each case recalculates the same upgrade package and financial assumptions."))
+        table(["Budget case", "Conventional LCC", "Sustainable LCC", "Signed saving"],
+              [[label, money(v[str(years)]["conventional"]), money(v[str(years)]["sustainable"]), money(v[str(years)]["savings_aud"])] for label, v in result["budget_scenarios"].items()], [110, 135, 135, 125])
+    if result["project"].get("cost_plan_note"):
+        story.append(paragraph("Cost breakdown basis: " + result["project"]["cost_plan_note"], "SmallText"))
     heading("Cumulative discounted cost")
     drawing = Drawing(505, 185)
     maximum = max(max(row["cumulative_pv"] for row in r[s]["cashflows"]) for s in ("conventional", "sustainable"))
@@ -105,8 +112,16 @@ def pdf_report(result, years):
     heading("Limitations")
     story.extend(paragraph(x) for x in result["limitations"])
     heading("Complete input record")
+    records = []
+    for key, value in result["project"].items():
+        if isinstance(value, list) and value:
+            records.extend([f"{key.replace('_', ' ')} #{i + 1}", json.dumps(item, ensure_ascii=False)] for i, item in enumerate(value))
+        elif isinstance(value, dict) and value:
+            records.extend([f"{key.replace('_', ' ')} / {name}", json.dumps(item, ensure_ascii=False)] for name, item in value.items())
+        else:
+            records.append([key.replace('_', ' '), json.dumps(value, ensure_ascii=False)])
     table(["Input", "Recorded value"],
-          [[key.replace('_', ' '), json.dumps(value, ensure_ascii=False)] for key, value in result["project"].items()],
+          records,
           [155, 350])
 
     def footer(canvas, doc):

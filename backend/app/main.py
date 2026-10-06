@@ -3,21 +3,20 @@ import io
 import json
 import re
 import os
-import hashlib
 import logging
-from pypdf import PdfReader
 from pathlib import Path
 from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).resolve().parents[2] / ".env")
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, Response, StreamingResponse
-from starlette.concurrency import run_in_threadpool
-from pydantic import ValidationError
-from backend.app.schemas.models import Project, ChatRequest
+from pydantic import ValidationError, TypeAdapter, ConfigDict
+from backend.app.schemas.models import Project, ChatRequest, CostPlanRequest, SupplierPriceRequest, DraftMaterial, DraftReplacement, ReferenceRatesRequest
+from backend.app.services.cost_plan import estimate_plan
+from backend.app.services.supplier_prices import supplier_price
 from backend.app.agent.workflow import analyse, analyse_stream
 from backend.app.research.sources import DATA, load_sources
-from backend.app.rag.store import retrieve, readiness, ingest
+from backend.app.rag.store import retrieve, readiness
 from backend.app.services import storage
 from backend.app.services.explanation import money, answer_question
 from backend.app.services.gemini import configured
@@ -33,7 +32,7 @@ app.middleware("http")(guard)
 def health():
     rag = readiness()
     return {"status": "ok", "rag_ready": rag["ready"], "knowledge": rag, "vector_db": "none",
-            "uploads_enabled": not bool(os.getenv("VERCEL")),
+            "uploads_enabled": False,
             "gemini_configured": configured(), "tavily_configured": bool(os.getenv("TAVILY_API_KEY")),
             "gemini_model": os.getenv("GEMINI_MODEL", "gemini-2.5-flash")}
 
@@ -59,6 +58,41 @@ def demo(legacy: bool = False):
 @app.post("/api/v1/validate")
 def validate_project(project: Project):
     return project.model_dump(mode="json")
+
+
+@app.post("/api/v1/reference-rates")
+def reference_rates(request: ReferenceRatesRequest):
+    """Show the same validated reference charges used by the calculation engine."""
+    from backend.app.research.sources import tariffs
+    try:
+        return dict(rates=tariffs(request), reference_date=request.price_date.isoformat())
+    except ValueError as error:
+        raise HTTPException(422, str(error)) from error
+
+
+@app.post("/api/v1/draft")
+def validate_draft(raw: dict):
+    """Validate field types without requiring a completed comparison."""
+    if set(raw) - set(Project.model_fields):
+        raise HTTPException(422, "The draft contains unknown project fields.")
+    result = {}
+    try:
+        for name, value in raw.items():
+            field = Project.model_fields[name]
+            if value is None:
+                # Editing may leave numeric fields empty, but not collections/flags.
+                if name in {"area", "floors", "rooms", "bathrooms", "occupants", "energy_kwh", "water_kl", "solar_kw", "tank_kl", "gas_mj", "gas_rate", "gas_daily", "feed_in_rate", "discount", "energy_escalation", "water_escalation", "maintenance_escalation", "other_escalation", "terminal_escalation", "maintenance_fraction", "other_annual", "other_construction", "disposal_conventional", "disposal_sustainable", "residual_conventional", "residual_sustainable", "premium", "energy_reduction", "water_reduction", "maintenance_reduction"} or field.is_required() is False and field.default is None:
+                    result[name] = None
+                    continue
+            if name in {"postcode", "zone", "name"} and isinstance(value, str) and len(value) <= 120:
+                result[name] = value
+                continue
+            annotation = list[DraftMaterial] if name == "materials" else list[DraftReplacement] if name == "replacements" else field.rebuild_annotation()
+            adapter = TypeAdapter(annotation, config=ConfigDict(allow_inf_nan=False))
+            result[name] = json.loads(adapter.dump_json(adapter.validate_python(value)))
+        return result
+    except (ValidationError, ValueError, TypeError) as error:
+        raise HTTPException(422, "Invalid draft field. Save a draft from GreenCost and try again.") from error
 
 
 @app.get("/health")
@@ -131,35 +165,15 @@ def stream_analysis(project: Project):
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
-@app.post("/api/knowledge/pdf")
-async def upload_pdf(request: Request, filename: str = "research.pdf"):
-    if os.getenv("VERCEL"):
-        raise HTTPException(403, "Hosted research library is read-only. Add PDFs locally, index them, then redeploy.")
-    if not filename.lower().endswith(".pdf"):
-        raise HTTPException(422, "Choose a PDF document.")
-    raw = bytearray()
-    async for part in request.stream():
-        raw.extend(part)
-        if len(raw) > 10 * 1024 * 1024:
-            raise HTTPException(413, "PDFs must be smaller than 10 MB.")
-    try:
-        reader = PdfReader(io.BytesIO(raw))
-        if reader.is_encrypted or len(reader.pages) > 200 or not any(page.extract_text() for page in reader.pages):
-            raise ValueError("Use a text-based, unlocked PDF with at most 200 pages.")
-    except Exception as error:
-        raise HTTPException(422, "Use a readable, text-based, unlocked PDF with at most 200 pages.") from error
-    name = re.sub(r"[^a-zA-Z0-9._-]", "_", Path(filename).stem)[:70] or "research"
-    target = DATA / "knowledge" / (name + "_" + hashlib.sha256(raw).hexdigest()[:12] + ".pdf")
-    existed = target.exists()
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_bytes(raw)
-    try:
-        result = await run_in_threadpool(ingest)
-    except Exception as error:
-        if not existed:
-            target.unlink(missing_ok=True)
-        raise HTTPException(503, "The PDF could not be indexed. Check the knowledge-base configuration.") from error
-    return dict(filename=target.name, **result)
+@app.post("/api/v1/cost-plan")
+def cost_plan(request: CostPlanRequest):
+    return estimate_plan(request)
+
+
+@app.post("/api/v1/supplier-price")
+def research_supplier_price(request: SupplierPriceRequest):
+    return supplier_price(request)
+
 
 
 def saved(id):

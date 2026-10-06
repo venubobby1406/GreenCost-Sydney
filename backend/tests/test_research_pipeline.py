@@ -1,6 +1,5 @@
 """Integration contracts for file retrieval, Gemini, Tavily and streamed analysis."""
 import json
-from pathlib import Path
 from unittest.mock import patch
 import httpx
 import pytest
@@ -43,6 +42,21 @@ def test_tavily_filters_domains_and_handles_timeout():
     assert request.call_args.kwargs["json"]["include_answer"] is False
     with patch.dict("os.environ", {"TAVILY_API_KEY": "test"}), patch("httpx.post", side_effect=httpx.ConnectError("offline")):
         assert research("query") == ([], 1, "unavailable")
+
+
+def test_gemini_incomplete_output_keeps_calculated_explanation():
+    partial = {"candidates": [{"finishReason": "MAX_TOKENS", "content": {"parts": [{"text": "An unfinished explanation about"}]}}]}
+    with patch.dict("os.environ", {"GEMINI_API_KEY": "test", "TAVILY_API_KEY": ""}), patch("httpx.post", return_value=response(partial)):
+        result = client.post("/api/analyse", json=demo()).json()
+    assert result["research_status"]["gemini"] == "incomplete_response"
+    assert len(result["periods"]["40"]["explanation"]) == 4
+    assert result["periods"]["40"]["conventional"]["components"]["capital"] == demo()["conventional_cost"]
+
+
+def test_gemini_oversized_output_is_not_cut_mid_sentence():
+    output = {"candidates": [{"finishReason": "STOP", "content": {"parts": [{"text": "Valid qualitative text. " * 400}]}}]}
+    with patch.dict("os.environ", {"GEMINI_API_KEY": "test"}), patch("httpx.post", return_value=response(output)):
+        assert generate("Instruction", "Context") == (None, 1, "incomplete_response")
 
 
 def test_combined_pdf_web_gemini_explanation():
@@ -116,17 +130,6 @@ def test_file_index_incremental_change_and_deletion(tmp_path, monkeypatch):
     assert store.retrieve("water maintenance", 3, "PROJECT_RESEARCH")
 
 
-def test_pdf_upload_validation_and_indexing(tmp_path, monkeypatch):
-    import backend.app.main as main
-    pdf = (DATA / "knowledge/Project_Proposal_EPP.pdf").read_bytes()
-    (tmp_path / "knowledge").mkdir()
-    (tmp_path / "verified").mkdir()
-    monkeypatch.setattr(main, "DATA", tmp_path)
-    monkeypatch.setattr(store, "DATA", tmp_path)
-    monkeypatch.setattr(store, "INDEX_DIR", tmp_path / "none")
-    assert client.post("/api/knowledge/pdf?filename=bad.pdf", content=b"invalid").status_code == 422
-    result = client.post("/api/knowledge/pdf?filename=../../research.pdf", content=pdf)
-    assert result.status_code == 200, result.text
-    assert result.json()["chunks"] > 0
-    assert Path(result.json()["filename"]).name == result.json()["filename"]
-    assert len(list((tmp_path / "knowledge").glob("*.pdf"))) == 1
+def test_public_pdf_upload_is_removed():
+    assert client.post("/api/knowledge/pdf?filename=research.pdf", content=b"%PDF").status_code == 404
+    assert client.get("/api/health").json()["uploads_enabled"] is False

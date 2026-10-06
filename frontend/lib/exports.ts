@@ -20,5 +20,5 @@ export function shareURL(data:Analysis,years:number){
  const bytes=new TextEncoder().encode(JSON.stringify(project));
  let binary='';for(const b of bytes)binary+=String.fromCharCode(b);
  const encoded=btoa(binary).replaceAll('+','-').replaceAll('/','_').replaceAll('=','');
- return window.location.origin+'/?project='+encoded;
+ return window.location.origin+'/compare?project='+encoded;
 }

@@ -29,12 +29,13 @@ def measure_costs(p):
             scale = q["tank_kl"] / 5
         baseline = m["default_premium_at_reference"]
         fallback = baseline if baseline is not None else missing[m["id"]]
-        if fallback is None and m["id"] not in p.price_overrides and m["id"] not in p.code_required_measures:
+        if fallback is None and m["id"] not in p.price_overrides and m["id"] not in p.installed_quotes and m["id"] not in p.code_required_measures:
             raise ValueError("Sustainable material alternatives require your own installed difference quote. No price or benefit is assumed.")
         indicative = (fallback or 0) * scale
-        own = m["id"] in p.price_overrides
+        pair = p.installed_quotes.get(m["id"])
+        own = m["id"] in p.price_overrides or pair is not None
         required = m["id"] in p.code_required_measures
-        value = 0 if required else p.price_overrides.get(m["id"], indicative * settings["price_range_factors"][p.price_scenario])
+        value = 0 if required else p.price_overrides.get(m["id"], pair.upgrade - pair.baseline if pair else indicative * settings["price_range_factors"][p.price_scenario])
         key, reference = quantities[0] if quantities else ("units", 1)
         quantity = q.get(key, 1)
         if m["id"] in ("insulation", "airtightness_shading"):
@@ -44,6 +45,6 @@ def measure_costs(p):
                             unit_price=value / quantity if quantity else 0, basis="installed upgrade difference, GST included",
                             includes_labour=True, includes_margin=True, gst_included=True, labour_added=0, margin_added=0,
                             gst_added=0, incentive=0, code_required=required, badge="Code required" if required else "Your price" if own else "Indicative",
-                            source="Your installed upgrade quote" if own else "Supplied package / explicitly labelled placeholder",
+                            source="Your comparable installed quotes: upgrade minus baseline" if pair and m["id"] not in p.price_overrides else "Your installed upgrade quote" if own else "Supplied package / explicitly labelled placeholder",
                             price_date="2026-10-05", replacements=m["replacements"], scale=scale))
     return records, geometry

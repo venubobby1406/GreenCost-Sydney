@@ -50,7 +50,12 @@ def report_html(result, years):
         + legend
         + "</svg>"
     )
+    budget_section = ""
+    if result.get("budget_scenarios"):
+        budget_section = "<h2>Construction budget range</h2><p>Headline results use the midpoint.</p>" + table(["Case", "Conventional LCC", "Sustainable LCC", "Signed saving"], [[label, money(v[str(years)]["conventional"]), money(v[str(years)]["sustainable"]), money(v[str(years)]["savings_aud"])] for label, v in result["budget_scenarios"].items()])
     sections = [
+        budget_section,
+        "<p>" + escape(result["project"].get("cost_plan_note", "")) + "</p>",
         f'<h1>GreenCost Sydney</h1><p class="eyebrow">LIFE-CYCLE COST STUDY · {years} YEARS</p><h2>{escape(result["project"]["name"])}</h2>',
         f"<p>{escape(result['confidence'])} — {escape(result['confidence_reason'])}</p>",
         table(

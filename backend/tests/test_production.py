@@ -105,7 +105,7 @@ def test_stateless_hosted_report_and_chat_need_no_saved_files(monkeypatch, tmp_p
         assert all(len(p.extract_text().split()) > 20 for p in reader.pages)
         answer = client.post('/api/chat',json=snapshot | {'question':'What if discount is 7%?'}).json()
         assert 'what_if' in answer
-        assert client.post('/api/knowledge/pdf',content=b'%PDF').status_code == 403
+        assert client.post('/api/knowledge/pdf',content=b'%PDF').status_code == 404
 
 
 def test_share_snapshot_reproduces_tariffs_after_cache_change():

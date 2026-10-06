@@ -12,6 +12,9 @@ class StrictModel(BaseModel):
 
 
 class Material(StrictModel):
+    price_status: str = Field(default="Your price", max_length=80)
+    price_source: str = Field(default="User input", max_length=500)
+    price_checked: str = Field(default="", max_length=60)
     name: str = Field(min_length=1, max_length=100)
     quantity: Money = 0
     unit: str = Field(default="m²", max_length=20)
@@ -29,7 +32,28 @@ class Replacement(StrictModel):
     escalation: Growth = 0.025
 
 
+class DraftMaterial(Material):
+    quantity: Money | None = None
+    unit_cost: Money | None = None
+    maintenance: Money | None = None
+
+
+class DraftReplacement(Replacement):
+    interval: int | None = Field(default=None, ge=1, le=100)
+    cost: Money | None = None
+    escalation: Growth | None = None
+
+
+class InstalledQuote(StrictModel):
+    baseline: Money
+    upgrade: Money
+
+
 class Project(StrictModel):
+    installed_quotes: dict[str, InstalledQuote] = Field(default_factory=dict, max_length=11)
+    budget_range: list[Money] | None = Field(default=None, min_length=2, max_length=2)
+    cost_plan_note: str = Field(default="", max_length=1500)
+    cost_plan_basis: str = Field(default="", max_length=1000)
     mode: Literal["itemised", "literature"] = "literature"
     preset: Literal["code_minimum_7star", "legacy_6star"] = "code_minimum_7star"
     assumption_version: Literal["2026-10-v1"] = "2026-10-v1"
@@ -108,6 +132,12 @@ class Project(StrictModel):
 
     @model_validator(mode="after")
     def coherent(self):
+        if self.budget_range:
+            low, high = self.budget_range
+            if low <= 0 or high < low or self.cost_mode != "quick" or self.historical_index:
+                raise ValueError("A budget range needs positive ordered bounds in quick-cost mode without historical indexation.")
+            if self.conventional_cost is None or abs(self.conventional_cost - (low + high) / 2) > .01:
+                raise ValueError("The main budget comparison must use the midpoint of the stated range.")
         from backend.app.services.catalogue import catalogue
         known = {m["id"] for m in catalogue()}
         if self.preset == "legacy_6star" and self.mode == "literature":
@@ -124,7 +154,7 @@ class Project(StrictModel):
                     or "rainwater" not in self.features
                     or any((self.disposal_conventional, self.disposal_sustainable, self.residual_conventional, self.residual_sustainable))):
                 raise ValueError("The legacy preset is a fixed regression example. Switch to the current baseline to edit physical inputs.")
-        if any(m not in known for m in self.selected_measures + self.code_required_measures + list(self.price_overrides)):
+        if any(m not in known for m in self.selected_measures + self.code_required_measures + list(self.price_overrides) + list(self.installed_quotes)):
             raise ValueError("Unknown upgrade. Choose a measure from the catalogue.")
         if len(set(self.selected_measures)) != len(self.selected_measures):
             raise ValueError("An upgrade can be selected only once.")
@@ -177,6 +207,24 @@ class ChatRequest(StrictModel):
     years: Literal[30, 40, 50] | None = None
 
 
+class CostPlanRequest(StrictModel):
+    area: float = Field(gt=0, le=1e7)
+    floors: int = Field(ge=1, le=100)
+    bathrooms: int = Field(ge=0, le=10000)
+    budget_low: float = Field(gt=0, le=1e12)
+    budget_high: Money | None = None
+
+    @model_validator(mode="after")
+    def ordered(self):
+        if self.budget_high is not None and self.budget_high < self.budget_low:
+            raise ValueError("The upper budget must be at least the lower budget.")
+        return self
+
+
+class SupplierPriceRequest(StrictModel):
+    item: Literal["concrete", "timber", "roofing", "windows", "insulation", "finishes"]
+
+
 class Source(StrictModel):
     id: str
     title: str
@@ -194,3 +242,14 @@ class Source(StrictModel):
     evidence: list[str]
     notes: str
     verification: Literal["verified"] = "verified"
+
+
+class ReferenceRatesRequest(StrictModel):
+    zone: Literal["Ausgrid", "Endeavour Energy", "Essential Energy"]
+    building_type: Literal["Residential House", "Apartment"] = "Residential House"
+    price_date: date = Field(default_factory=date.today)
+    water_connected: bool = True
+    wastewater_connected: bool = True
+    stormwater: bool = False
+    drought_tariff: bool = False
+    tariff_mode: Literal["official"] = "official"

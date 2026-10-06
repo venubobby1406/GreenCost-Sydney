@@ -4,7 +4,9 @@ Compare the whole-life cost of a conventional and upgraded building over **30, 4
 
 **No SQL, NoSQL, vector database, database account, or database installation is required.** Research is kept in ordinary files. Recent comparisons stay in your browser. Local installations can also save JSON reports.
 
-There are two main pages: **your comparison** and **method & evidence**. The existing `/sources` address redirects to the second page.
+The **Home** page introduces GreenCost and its interactive building. **Compare** opens the three-step calculator and results at `/compare`. **Method & evidence** is a supporting reference page; `/sources` redirects there.
+
+For a complete nontechnical walkthrough, technology explanation and five-minute presentation script, read the [Client Presentation and Execution Guide](docs/GreenCost-Client-Guide.md).
 
 ## Run it on Windows
 
@@ -24,34 +26,40 @@ For the optimised production build:
 
 The same script accepts `-SetupOnly` to install without starting, or `-Python 'C:\path\to\python.exe'` if Python is not on your PATH. If PowerShell blocks scripts, run `powershell -ExecutionPolicy Bypass -File .\scripts\start-local.ps1` for this invocation.
 
-No API key is needed to calculate, inspect evidence, compare scenarios, or export reports.
+No API key is needed to calculate, inspect evidence, compare scenarios, or export reports. Tavily is required for optional live supplier searches. A configured key is distinct from a successful provider request; the interface reports the last analysis status.
 
 ## Example 1: explore the supplied house
 
-1. Choose **Explore a sample** or **Fill sample**.
-2. Continue through **Your building**, **Costs & consumption**, and **Your greener alternative**.
+1. Choose **Explore a sample** or **Try an example**.
+2. Continue through **Building details**, **Budget & bills**, and **Your upgrades**.
 3. Inspect the selected insulation, solar and rainwater upgrades. Prices say **Indicative** because they are not verified builder quotes.
-4. Review disposal and salvage, then choose **Analyse my building**.
-5. Switch between 30, 40 and 50 years, examine the contribution chart and sensitivity table, and download PDF, HTML or CSV.
+4. Review disposal and salvage, choose **Review comparison**, check the summary, then choose **Compare my building**.
+5. Read the upfront difference, whole-life costs and break-even. Switch between 30, 40 and 50 years; expand charts or research details when needed, and download PDF, HTML or CSV.
 
 The sample is an illustration. Do not reuse its costs or consumption as measurements of your own house.
 
-## Example 2: use your own project
+## Example 2: use a budget range
 
-Choose **Start fresh**, then enter your Greater Sydney postcode and the distributor shown on your bill. For a practice example, use 2000, Ausgrid, 220 m², one floor, a $600,000 construction budget, 5,200 kWh electricity and 200 kL water annually. These are **example inputs**, not construction benchmarks.
+Choose **Start fresh**. Enter postcode **2000**, a **220 m²** house, **one floor** and **three occupants**. In **Budget & bills**, choose **Budget range** and enter **AUD 600,000–800,000**. The main comparison uses the **AUD 700,000 midpoint**; low and high budgets are recalculated separately.
 
-In itemised mode, select solar. Open **Price source & your quote** and enter your builder's installed **difference** versus the baseline, for example $6,500. Set the array size to 6.6 kW. Enter disposal costs, for example $33,000 in each case, and explicitly confirm any zero salvage amounts. These end-of-life values are also illustrative.
+Choose **Review & edit cost breakdown** to inspect the generated categories. Quantities and category shares are explicitly labelled estimates. **Find prices for this breakdown** checks up to five material categories through Tavily. A clear tax-inclusive per-unit source-page price can fill automatically when there is one match. Multiple products need selection; ambiguous or missing prices remain **Quote required**. This does not fetch installed builder quotes or guarantee Sydney delivery. The entered budget remains the calculation baseline until you choose **Use edited breakdown as construction total**.
 
-Choose **Analyse my building**. Use **Refine your inputs** to try another quote or discount rate. A positive signed saving means the upgraded scenario costs less; a negative saving means it costs more. The app does not force a sustainable-building saving.
+Enter **5,200 kWh** electricity and **200 kL** water annually, or choose **Monthly average** and enter your average month; the app multiplies it by twelve. Select **Ausgrid** as the distributor for this practice example. Use the distributor printed on your own bill for a real project.
 
-Choose **Literature scenarios** to explore percentage assumptions instead. Low / Mid / High scenarios use the package's research ranges and reduce variable utility charges, while retaining fixed charges.
+Continue to upgrades and select insulation and solar. Review their installed cost differences; use **Compare two installed quotes** if you know both conventional and sustainable costs for the same scope. Enter disposal and salvage estimates and explicitly confirm zeros. Choose **Review comparison**, check the three summary sections and use their **Edit** buttons if needed. Choose **Compare my building** to calculate.
+
+Required fields have an **asterisk (*)**. Missing or invalid values show a reason beside the field and focus the first problem. Select the **ⓘ** beside a label for help; it also works with keyboard focus and hover. Numbers can be erased completely; blank and zero have different meanings. Utility reference charges appear before calculation for your selected distributor, water connections and reference date.
+
+Every value above is illustrative, not a Sydney construction benchmark or prediction for your house. A positive signed saving means sustainable costs less; a negative saving means it costs more. Correct consumption and realistic quotes do not guarantee savings.
 
 ## Save, reopen and share
 
-- **Save project** downloads a JSON file containing inputs, captured rates and results. Use **Open saved project** to reload the inputs and recalculate.
-- **Save current inputs** works before analysis; unfinished inputs must be completed before they can be reanalysed.
-- **Share** copies a URL containing inputs and captured utility rates. The recipient opens it and chooses **Analyse**. This reproduces financial results for assumption version `2026-10-v1`; optional AI wording may differ.
-- **Recent comparisons on this device** retains the last three results when browser storage is available. **Clear device history** removes them.
+- **Save project** downloads a JSON file containing inputs, captured rates and results. On the Compare page, choose **My projects → Import saved project** to reload the inputs and recalculate.
+- **Save draft** sits in the form action bar. It downloads unfinished inputs, including empty number fields. Choose **My projects → Import saved project** to resume, then complete the inputs before calculating.
+- **Share** copies a URL containing inputs and captured utility rates. The recipient opens it and chooses **Compare my building**. This reproduces financial results for assumption version `2026-10-v1`; optional AI wording may differ.
+- **My projects → Saved on this device** lists the last three completed comparisons with names and dates when browser storage is available. Opening one restores validated inputs for review and recalculation. **Clear device history** removes these browser copies.
+
+Downloads and successful actions use a temporary notice at the top right. Calculator connection failures stay beside the form with **Retry connection** and connection help. **Research connections** and the results' research-status section distinguish configured keys from successful calls, provider busy, quota limits and unavailable services. Financial calculations remain available without optional research APIs.
 
 Share links and downloaded files contain project details. Do not put private information in the project name or share a link publicly unless you intend to disclose its inputs. With browser storage disabled or full, calculations and downloads still work.
 
@@ -61,7 +69,7 @@ The setup script creates `.env` only if it does not already exist. Add keys to t
 
 ```dotenv
 GEMINI_API_KEY=your-key
-GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MODEL=gemini-3.5-flash-lite
 TAVILY_API_KEY=your-key
 TAVILY_DAILY_CAP=10
 TAVILY_MONTHLY_CAP=200
@@ -69,9 +77,9 @@ GEMINI_DAILY_CAP=20
 GEMINI_MONTHLY_CAP=400
 ```
 
-Restart after editing. Choose a model available in your Gemini account. Free services have quotas; timeouts, quota errors and unavailable models fall back to calculated explanations. A normal online comparison makes at most one search and one explanation call. Follow-up qualitative questions may make an additional explanation call. Financial what-ifs and exports make no external calls.
+Restart after editing. Choose a model available in your Gemini account. Free services have quotas; timeouts, quota errors and unavailable models fall back to calculated explanations. A normal online comparison makes at most one context search and one explanation call. Supplier pricing is separate: a full breakdown refresh makes up to five search requests, and an individual refresh makes at most one. Successful price checks are reused for up to a day; rapid repeated attempts have a cooldown. Follow-up qualitative questions may make an additional explanation call. Financial what-ifs and exports make no external calls.
 
-Gemini sees non-identifying scenario facts and selected research excerpts. Tavily receives a general building-feature search. Neither provider controls arithmetic or official tariff values. Do not upload confidential research when optional AI is enabled.
+Gemini sees non-identifying scenario facts and selected research excerpts. Tavily receives a general building-feature search. Neither provider controls arithmetic or official tariff values. Administrators should exclude confidential research from the bundled library when optional AI is enabled.
 
 Local caps count requests, not credits, and are persisted as JSON. **Serverless instances cannot share a global counter without shared storage.** Hosted AI is therefore off by default. Keep account-level quotas in place before enabling it.
 
@@ -99,7 +107,7 @@ Vercel Hobby is for personal, non-commercial use and is subject to limits. It ca
 
 To use optional free APIs on Vercel, add the two keys and `GEMINI_MODEL` to the **backend project only**. Set `ENABLE_HOSTED_AI=true` only after configuring provider quotas and host abuse protection. Per-instance rate limits and counters are not a distributed spending guarantee. Preview frontend domains must also be explicitly allowed.
 
-Vercel has no durable local filesystem. Uploaded PDFs are disabled there; add PDFs locally, run `scripts/ingest_knowledge.py`, and redeploy. Results are retained in the browser or exported files. Server-side report/chat routes rebuild validated inputs with captured rates, rather than relying on a saved server ID. No hosted deployment has been performed or verified against your account.
+Vercel has no durable local filesystem. PDF uploads have been removed from the public UI and API. Administrators can maintain the included research files locally, run `scripts/ingest_knowledge.py`, and redeploy. Results are retained in the browser or exported files. Server-side report/chat routes rebuild validated inputs with captured rates, rather than relying on a saved server ID. No hosted deployment has been performed or verified against your account.
 
 Official deployment guide: [FastAPI on Vercel](https://vercel.com/docs/frameworks/backend/fastapi).
 
@@ -118,7 +126,7 @@ The current app's base-year escalation convention and the package's legacy year-
 
 The software runs and is tested, but it is **not a certified cost or energy model**. The package includes placeholder assumptions. Public launch as an authoritative planning tool still requires the owner/supervisor and appropriate building professionals to review them.
 
-The supplied package's **full official Greater Sydney postcode/network/climate concordance and supplier price pipeline are not complete in this delivery**. The interface asks users to select the actual electricity distributor from their bill, uses clearly labelled indicative upgrade differences, and accepts project quotes. It does not guess a climate zone or claim live supplier prices. Supplier terms, paired baseline/upgrade product specifications, verified unit prices, and incentive eligibility must be approved before live price updates are implemented/enabled. These outstanding requirements are recorded in `DECISIONS.md`.
+The supplied package's **full official Greater Sydney postcode/network/climate concordance and comprehensive paired supplier catalogue remain incomplete**. The interface asks users to select the actual electricity distributor from their bill, uses clearly labelled indicative upgrade differences, and accepts project quotes. It does not guess climate zones. A bounded Tavily supplier-check pipeline is implemented for six budget categories; only unambiguous tax-inclusive source-page prices qualify for filling, and many categories need quotes. Comparable installed baseline/upgrade quotes can be entered separately. The complete paired product specifications, supplier terms, quantity allowances and incentive eligibility still need review before an authoritative public launch. These outstanding requirements are recorded in `DECISIONS.md`.
 
 The provisional code-minimum baseline and public disclaimer/privacy/terms wording also need owner sign-off. Selecting upgrades is not a BASIX or NatHERS assessment. Site conditions, orientation, shading, code requirements, installation quality and network approvals need project-specific review.
 
@@ -136,7 +144,7 @@ npm run build
 npm audit
 ```
 
-Stop the frontend before rebuilding; development and production share `.next`. GitHub Actions runs backend and frontend checks on pushes and pull requests. Live provider requests use mocked contracts in tests; no real key or supplier price was used to verify this delivery.
+Stop the frontend before rebuilding; development and production share `.next`. GitHub Actions runs backend and frontend checks on pushes and pull requests. Automated provider tests use mocked contracts. The 6 October verification records 81 passing backend tests and the production/browser checks. Live Tavily checks returned research context, while supplier prices can remain unresolved; Gemini has returned both provider-busy and unusable-text conditions, with calculated fallback explanations. See `docs/PRODUCTION_VERIFICATION.md` for the evidence and limits.
 
 ## Project structure
 
@@ -171,6 +179,10 @@ To add a region later, create a new `data/regions/<region>/` folder with reviewe
 
 **Solar too large:** reduce the array or override roof area from your drawings. An override is an estimate, not network approval.
 
-**PDF upload rejected:** use a readable, unlocked, text-based PDF, at most 10 MB and 200 pages. Scans need OCR. Hosted deployments use a read-only library.
+**No supplier price:** many products have variant-dependent, pack-based or quote-only pricing. The app retains the labelled estimate and links to the supplier. Check the source and confirm installation, delivery and product suitability before using a price.
+
+**Gemini busy / quota reached:** the provider status identifies temporary demand, quota or model-access errors where available. Financial calculations still finish with built-in explanations.
+
+**Blank number fields:** Backspace now clears values. Complete required inputs before continuing. A zero utility value requires confirmation and models no usage savings.
 
 **Report or chat fails on Vercel:** verify the backend URL, origin allow-list, deployment protection and backend function logs. Do not put provider keys in the frontend.
