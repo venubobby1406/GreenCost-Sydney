@@ -106,6 +106,18 @@ def assumptions(p, rates, c, s):
     user = "DEMO assumption — replace before project use" if p.input_quality == "demo" else "User / project input"
     research = "Project_Proposal_EPP.pdf p.5; EPP_LS.pdf pp.2–3 — fallback, not a performance guarantee"
     add("Area", area_m2(p.area, p.area_unit), "m²", user)
+    add("Number of floors", p.floors, "floors", user)
+    add("Number of occupants", p.occupants, "people", "User / project count" if p.occupant_mode == "manual" else "Indicative planning estimate; does not replace bill consumption")
+    if p.building_type == "Apartment Building":
+        from backend.app.services.occupancy import apartment_occupancy, BASIX_SOURCE
+        estimate = apartment_occupancy(area_m2(p.area, p.area_unit), p.apartment_average_unit_m2, p.apartment_residential_share)
+        add("Average apartment area assumption", p.apartment_average_unit_m2, "m²/apartment", "Editable planning assumption; default 75 m² is illustrative, not an official benchmark")
+        add("Residential share of total area", p.apartment_residential_share * 100, "%", "Editable planning assumption; default 80% excludes assumed common/service space")
+        add("Estimated apartments", estimate["estimated_dwellings"], "apartments", "Residential area / average apartment area; indicative until the unit schedule is known")
+        add("Occupancy per apartment assumption", estimate["occupants_per_dwelling"], "people/apartment", "NSW BASIX energy-modelling relationship, August 2022, applied per assumed dwelling: " + BASIX_SOURCE)
+        add("Implied occupancy density", estimate["gross_m2_per_person"], "gross m²/person", "Derived from the editable apartment assumptions, not a legal density standard")
+        if p.entered_area is not None:
+            add("Entered " + ("area per floor" if p.area_basis == "per_floor" else "total building area"), p.entered_area, p.area_unit, "Whole-building area is stored once; per-floor entry is multiplied by floors once")
     add(
         "Conventional capital",
         c.capital,
@@ -118,8 +130,9 @@ def assumptions(p, rates, c, s):
         "AUD",
         "Sum of selected installed upgrade differences (indicative unless quoted)" if p.mode == "itemised" else user if p.sustainable_cost is not None else "User-selected package premium applied to conventional capital",
     )
-    for name, key in [("Annual electricity", "energy_kwh"), ("Annual water", "water_kl")]:
-        add(name, getattr(p, key), "kWh/year" if key == "energy_kwh" else "kL/year", user)
+    add("Annual electricity", p.energy_kwh, "kWh/year", user)
+    add("Annual water", p.water_kl * 1000, "L/year", user)
+    add("Annual water in million litres", p.water_kl / 1000, "million L/year", user)
     for key in (() if p.mode == "itemised" else ("energy_reduction", "water_reduction", "maintenance_reduction")):
         add(
             key.replace("_", " ").capitalize(),
@@ -186,7 +199,10 @@ def assumptions(p, rates, c, s):
             add("Takeoff: " + name, value, "see quantity name", "Your quantity" if name in p.quantity_overrides else "Indicative rectangular-plan assumption")
         energy = model(p, [m["id"] for m in measures if not m["code_required"]])
         for name in ("grid_kwh", "gas_mj", "generation_kwh", "self_use_kwh", "export_kwh", "water_kl", "rainwater_offset_kl"):
-            add("Modelled: " + name, energy[name], "see quantity name / year", "Computed using indicative end-use assumptions")
+            if name in ("water_kl", "rainwater_offset_kl"):
+                add("Modelled: " + ("mains water" if name == "water_kl" else "rainwater offset"), energy[name] * 1000, "L/year", "Computed using indicative end-use assumptions")
+            else:
+                add("Modelled: " + name, energy[name], "see quantity name / year", "Computed using indicative end-use assumptions")
     if p.gas_mj:
         for name in ("gas_mj", "gas_rate", "gas_daily"):
             add(name, getattr(p, name), "MJ/year" if name == "gas_mj" else "AUD/MJ" if name == "gas_rate" else "AUD/day", "User gas bill: " + p.gas_note)

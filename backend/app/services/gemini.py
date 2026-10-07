@@ -10,7 +10,7 @@ def configured():
     return bool(os.getenv("GEMINI_API_KEY"))
 
 
-def generate(system: str, context: str):
+def generate(system: str, context: str, timeout: float = 30):
     if not configured():
         return None, 0, "not_configured"
     if not reserve("gemini"):
@@ -24,7 +24,7 @@ def generate(system: str, context: str):
             headers={"x-goog-api-key": os.environ["GEMINI_API_KEY"]},
             json={"systemInstruction": {"parts": [{"text": system}]},
                   "contents": [{"role": "user", "parts": [{"text": context}]}],
-                  "generationConfig": {"temperature": 0.2, "maxOutputTokens": 4096}}, timeout=30,
+                  "generationConfig": {"temperature": 0.2, "maxOutputTokens": 4096}}, timeout=timeout,
         )
         response.raise_for_status()
         candidate = response.json()["candidates"][0]

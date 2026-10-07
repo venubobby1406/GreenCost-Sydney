@@ -21,6 +21,7 @@ from backend.app.services import storage
 from backend.app.services.explanation import money, answer_question
 from backend.app.services.gemini import configured
 from backend.app.services.report import report_html
+from backend.app.services.report_names import attachment_header
 
 app = FastAPI(title="GreenCost Sydney", version="1.0.0")
 logger = logging.getLogger("greencost")
@@ -33,7 +34,7 @@ def health():
     rag = readiness()
     return {"status": "ok", "rag_ready": rag["ready"], "knowledge": rag, "vector_db": "none",
             "uploads_enabled": False,
-            "gemini_configured": configured(), "tavily_configured": bool(os.getenv("TAVILY_API_KEY")),
+            "groq_configured": bool(os.getenv("GROQ_API_KEY")), "openrouter_configured": bool(os.getenv("OPENROUTER_API_KEY")), "gemini_configured": configured(), "tavily_configured": bool(os.getenv("TAVILY_API_KEY")),
             "gemini_model": os.getenv("GEMINI_MODEL", "gemini-2.5-flash")}
 
 
@@ -81,7 +82,7 @@ def validate_draft(raw: dict):
             field = Project.model_fields[name]
             if value is None:
                 # Editing may leave numeric fields empty, but not collections/flags.
-                if name in {"area", "floors", "rooms", "bathrooms", "occupants", "energy_kwh", "water_kl", "solar_kw", "tank_kl", "gas_mj", "gas_rate", "gas_daily", "feed_in_rate", "discount", "energy_escalation", "water_escalation", "maintenance_escalation", "other_escalation", "terminal_escalation", "maintenance_fraction", "other_annual", "other_construction", "disposal_conventional", "disposal_sustainable", "residual_conventional", "residual_sustainable", "premium", "energy_reduction", "water_reduction", "maintenance_reduction"} or field.is_required() is False and field.default is None:
+                if name in {"apartment_average_unit_m2", "apartment_residential_share", "area", "floors", "rooms", "bathrooms", "occupants", "energy_kwh", "water_kl", "solar_kw", "tank_kl", "gas_mj", "gas_rate", "gas_daily", "feed_in_rate", "discount", "energy_escalation", "water_escalation", "maintenance_escalation", "other_escalation", "terminal_escalation", "maintenance_fraction", "other_annual", "other_construction", "disposal_conventional", "disposal_sustainable", "residual_conventional", "residual_sustainable", "premium", "energy_reduction", "water_reduction", "maintenance_reduction"} or field.is_required() is False and field.default is None:
                     result[name] = None
                     continue
             if name in {"postcode", "zone", "name"} and isinstance(value, str) and len(value) <= 120:
@@ -114,11 +115,13 @@ def regional_assumptions():
 
 @app.post("/api/v1/preview")
 def preview(raw: dict):
-    from backend.app.services.catalogue import measure_costs
+    from backend.app.services.catalogue import measure_costs, SolarCapacityError
     try:
         p = Project.model_validate(raw | {"terminal_confirmed": True})
         rows, geometry = measure_costs(p)
         return dict(measures=rows, takeoff=geometry, premium=sum(m["premium"] for m in rows))
+    except SolarCapacityError as error:
+        raise HTTPException(422, error.details) from error
     except (ValueError, ValidationError) as error:
         raise HTTPException(422, str(error)) from error
 
@@ -194,7 +197,7 @@ def report(id: str, years: int = 40, download: bool = True):
         raise HTTPException(422, "Select 30, 40 or 50 years")
     return HTMLResponse(
         report_html(saved(id), years),
-        headers={"Content-Disposition": f'attachment; filename="GreenCost-{years}-year-report.html"'}
+        headers={"Content-Disposition": attachment_header(saved(id)["project"].get("name"), years, "html")}
         if download
         else {},
     )
@@ -340,6 +343,50 @@ class Snapshot(StrictModel):
         return self
 
 
+class ReportEvidence(StrictModel):
+    source: str = Field(max_length=300)
+    page: int | None = Field(default=None, ge=1, le=100000)
+    source_type: str = Field(default="PROJECT_RESEARCH", max_length=80)
+    url: str | None = Field(default=None, max_length=2000)
+    text: str = Field(default="", max_length=2000)
+
+
+class ReportCommentary(StrictModel):
+    years: Literal[30, 40, 50]
+    provider: Literal["openrouter", "groq", "gemini", "calculated"] = "calculated"
+    paragraphs: list[str] = Field(default_factory=list, max_length=3)
+    evidence: list[ReportEvidence] = Field(default_factory=list, max_length=8)
+    statuses: dict[str, str] = Field(default_factory=dict, max_length=3)
+
+    @model_validator(mode="after")
+    def bounded_commentary(self):
+        if any(len(p) > 7000 for p in self.paragraphs):
+            raise ValueError("Report commentary is too long.")
+        if any(k not in ("openrouter", "groq", "gemini") or len(v) > 80 for k, v in self.statuses.items()):
+            raise ValueError("Invalid provider status record.")
+        return self
+
+
+class ReportSnapshot(Snapshot):
+    commentary: ReportCommentary | None = None
+
+
+def rebuild_report(snapshot):
+    result = rebuild(snapshot)
+    captured = snapshot.commentary
+    result["report_commentary"] = dict(provider="calculated", paragraphs=[], statuses={}, origin="not_captured")
+    if captured and captured.years == snapshot.years:
+        from backend.app.services.ai_fallback import usable
+        context = json.dumps({"evidence": [e.model_dump() for e in captured.evidence]})
+        accepted = [p for p in captured.paragraphs if usable(p, context)]
+        if captured.provider != "calculated" and accepted and len(accepted) == len(captured.paragraphs):
+            result["evidence"] = [e.model_dump() for e in captured.evidence]
+            result["report_commentary"] = dict(provider=captured.provider, paragraphs=accepted, statuses=captured.statuses, origin="saved_comparison")
+        else:
+            result["report_commentary"] = dict(provider="calculated", paragraphs=[], statuses=captured.statuses, origin="unavailable" if captured.provider == "calculated" else "rejected")
+    return result
+
+
 class SnapshotQuestion(Snapshot):
     question: str = Field(min_length=1, max_length=500)
 
@@ -369,8 +416,8 @@ def rebuild(snapshot):
 
 
 @app.post("/api/report", response_class=HTMLResponse)
-def stateless_report(snapshot: Snapshot):
-    return HTMLResponse(report_html(rebuild(snapshot), snapshot.years))
+def stateless_report(snapshot: ReportSnapshot):
+    return HTMLResponse(report_html(rebuild_report(snapshot), snapshot.years), headers={"Content-Disposition": attachment_header(snapshot.project.name, snapshot.years, "html")})
 
 
 @app.post("/api/chat")
@@ -380,10 +427,10 @@ def stateless_chat(snapshot: SnapshotQuestion):
 
 @app.post("/api/report/pdf")
 @app.post("/api/v1/report/pdf")
-def stateless_pdf(snapshot: Snapshot):
+def stateless_pdf(snapshot: ReportSnapshot):
     from backend.app.services.pdf_report import pdf_report
-    return Response(pdf_report(rebuild(snapshot), snapshot.years), media_type="application/pdf",
-                    headers={"Content-Disposition": f'attachment; filename="GreenCost-{snapshot.years}-year-report.pdf"'})
+    return Response(pdf_report(rebuild_report(snapshot), snapshot.years), media_type="application/pdf",
+                    headers={"Content-Disposition": attachment_header(snapshot.project.name, snapshot.years, "pdf")})
 
 
 @app.post("/api/v1/sensitivity/matrix")

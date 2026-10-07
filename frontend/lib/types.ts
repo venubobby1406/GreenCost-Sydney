@@ -1,6 +1,8 @@
 export type Material = {name:string;quantity:number;unit:string;unit_cost:number;service_life:number|null;replacement_interval:number|null;maintenance:number;price_status?:string;price_source?:string;price_checked?:string};
 export type Replacement = {name:string;scenario:'both'|'conventional'|'sustainable';interval:number;cost:number;escalation:number};
 export type Project = {
+ area_basis?:'total'|'per_floor';entered_area?:number|null;apartment_average_unit_m2?:number;apartment_residential_share?:number;
+ occupant_mode?:'estimate'|'manual';end_of_life_mode?:'retained'|'estimate'|'manual';terminal_basis?:string;
  budget_range?:number[]|null;cost_plan_note?:string;cost_plan_basis?:string;
  installed_quotes?:Record<string,{baseline:number;upgrade:number}>;
  mode:'itemised'|'literature';preset:'code_minimum_7star'|'legacy_6star';assumption_version:'2026-10-v1';selected_measures:string[];code_required_measures:string[];price_overrides:Record<string,number>;quantity_overrides:Record<string,number>;price_scenario:'low'|'median'|'high';solar_kw:number;tank_kl:number;gas_mj:number;gas_rate:number;gas_daily:number;gas_note:string;feed_in_rate:number;terminal_confirmed:boolean;rates_snapshot?:Record<string,number>|null;
@@ -17,19 +19,19 @@ export type Scenario = {total_lcc:number;components:Record<string,number>;cashfl
 export type Period = {years:number;conventional:Scenario;sustainable:Scenario;savings_aud:number;savings_percent:number|null;break_even_year:number|null;reversal_years:number[];capital_difference:number;component_savings:Record<string,number>;explanation:string[]};
 export type Evidence = {source:string;page:number;text:string;source_type:string;url:string|null};
 export type Source = {id:string;title:string;organisation:string;url:string;effective_from:string;effective_to:string|null;publication_date:string|null;retrieved_at:string;notes:string;source_category:string;values:Record<string,{value:number;unit:string;evidence:string}>};
-export type Analysis = ExtendedAnalysis & {rates:Record<string,number>;id:string;project:Project;periods:Record<string,Period>;sensitivity:{years:number;discount:number;energy_escalation:number;savings_aud:number;savings_percent:number|null}[];confidence:string;confidence_reason:string;usage:{tavily_calls:number;llm_calls:number};research_status?:{gemini:string;tavily:string;vector_db:string};sources:Source[];evidence:Evidence[];assumptions:{name:string;value:number;unit:string;source:string}[];limitations:string[]};
-export type Health = {rag_ready:boolean;knowledge:{ready:boolean;documents:number;chunks:number};vector_db:string;gemini_configured:boolean;tavily_configured:boolean;gemini_model:string;uploads_enabled:boolean};
-export type Stage = {type:'stage'|'result'|'error';stage?:string;message?:string;result?:Analysis};
-export type Measure={id:string;name:string;plain_description:string};
+export type Analysis = ExtendedAnalysis & {rates:Record<string,number>;id:string;project:Project;periods:Record<string,Period>;sensitivity:{years:number;discount:number;energy_escalation:number;savings_aud:number;savings_percent:number|null}[];confidence:string;confidence_reason:string;usage:{tavily_calls:number;llm_calls:number};research_status?:{gemini:string;groq?:string;openrouter?:string;explanation_provider?:string;explanation_status?:string;tavily:string;vector_db:string};sources:Source[];evidence:Evidence[];assumptions:{name:string;value:number;unit:string;source:string}[];limitations:string[]};
+export type Health = {rag_ready:boolean;knowledge:{ready:boolean;documents:number;chunks:number};vector_db:string;groq_configured?:boolean;openrouter_configured?:boolean;gemini_configured:boolean;tavily_configured:boolean;gemini_model:string;uploads_enabled:boolean};
+export type Stage = {type:'stage_start'|'stage'|'result'|'error';providers?:{gemini?:string;groq?:string;openrouter?:string;tavily?:string};stage?:string;message?:string;result?:Analysis};
+export type Measure={id:string;name:string;plain_description:string;guidance_url?:string;guidance_checked?:string};
 export type MeasureCost={id:string;name:string;premium:number;quantity:number;quantity_driver:string;unit_price:number;low:number;high:number;badge:string;source:string;price_date:string};
 export type ExtendedAnalysis={budget_scenarios?:Record<string,Record<string,{conventional:number;sustainable:number;savings_aud:number}>>;measures?:MeasureCost[];measure_contributions?:Record<string,{id:string;name:string;marginal_savings:number;standalone_savings:number;interaction_adjustment:number}[]>;literature_scenarios?:Record<string,Record<string,Period>>;price_sensitivity?:Record<string,Record<string,{savings_aud:number;break_even_year:number|null}>>;assumption_version?:string;price_snapshot_date?:string};
 export const money = (v:number) => new Intl.NumberFormat('en-AU',{style:'currency',currency:'AUD',maximumFractionDigits:0}).format(v);
-export class ApiError extends Error {constructor(message:string,public fields:Record<string,string>={}){super(message);this.name='ApiError';}}
+export class ApiError extends Error {constructor(message:string,public fields:Record<string,string>={},public status=0,public details?:Record<string,unknown>){super(message);this.name='ApiError';}}
 async function readResponse(response:Response){
  let result;try{result=await response.json();}catch{throw new ApiError('The calculator could not be reached. Check the connection and retry.');}
  if(!response.ok){const detail=result.detail,fields:Record<string,string>={};
   if(Array.isArray(detail))for(const error of detail){const key=error.loc?.filter((v:unknown)=>v!=='body').join('.');if(key)fields[key]=error.msg?.replace('Value error, ','')??'Check this value.';}
-  throw new ApiError(Object.keys(fields).length?'Review the highlighted inputs.':typeof detail==='string'?detail:'The calculator could not complete this request. Please retry.',fields);
+  throw new ApiError(Object.keys(fields).length?'Review the highlighted inputs.':typeof detail==='string'?detail:typeof detail?.message==='string'?detail.message:'The calculator could not complete this request. Please retry.',fields,response.status,detail&&typeof detail==='object'&&!Array.isArray(detail)?detail:undefined);
  }return result;
 }
 export async function api<T>(path:string, body?:unknown):Promise<T> {

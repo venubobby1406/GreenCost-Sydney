@@ -1,4 +1,11 @@
-# GreenCost Sydney — Client Presentation and Execution Guide
+# GreenCost — Client Presentation and Execution Guide
+
+The interface was refreshed on 7 October 2026. See [Client refresh notes](Client-Refresh-Notes.md) for draft recovery, occupant assumptions, end-of-life estimates and the new results labels. The financial model still uses canonical kL internally. **Apartment building** now covers the whole building; previously saved **Apartment unit** projects keep their original single-flat scope.
+
+For an apartment building, enter **Area per floor** or **Total building area** and a required floor count. For example, 500 m² per floor × 20 floors gives 10,000 m² and 219 estimated occupants with the editable illustrative defaults of 75 m² per apartment and 80% apartment space. Total-area mode stores the already combined area without multiplying it again. **Enter actual number** provides a manual resident count, which stays fixed when area or floors change. The estimate uses a dated dwelling-level BASIX energy relationship; there is no claimed universal Sydney area-per-person standard. These assumptions are not legal capacity or predicted water consumption.
+
+Keep budgets, annual usage and meter charges on the same whole-building scope. Use aggregate bill rates instead of single-house reference charges. Confirm room/bathroom totals under optional details. Generic upgrade coefficients are indicative and do not model a complete tower specification; include lifts, central plant, parking and common-system costs through project quotes, maintenance and replacement allowances. Occupancy does not automatically replace measured/design electricity or water usage. See the [README apartment example](../README.md) for additional details.
+
 
 **Prepared: 6 October 2026**  
 **Audience:** the project owner, client and anyone who wants to understand GreenCost without reading code.  
@@ -132,12 +139,12 @@ The animated building is a **visual preview**. Its floor and solar buttons do no
 | Input | What it means |
 |---|---|
 | Project name | An optional name for saved files and reports. |
-| Sydney postcode | The location you are describing; check actual service coverage. |
-| Building type | House, apartment or commercial/other. |
+| Postcode | The location you are describing; check actual service coverage. |
+| Building type | House, one apartment unit or commercial/other premises. |
 | Total floor area | Combined area of all floors, not just the ground floor. |
 | Area unit | Square metres or square feet; square feet are converted for calculations. |
-| Number of floors | Actual storey count. |
-| Number of occupants | People using the building. Utility costs still use the entered consumption. |
+| Number of floors | Optional house detail; shown for commercial premises. Not the entire apartment building. |
+| Number of occupants | Suggested for a house using a dated BASIX energy assumption, with manual override in optional details. Enter the actual unit/premises occupants for other types. Bill consumption determines utility costs. |
 | Optional details | Rooms, bathrooms, build quality and whether inputs are estimates, actual inputs or demo assumptions. |
 
 Required fields are marked with an asterisk (*). The **ⓘ** beside a label explains the field through hover, keyboard focus or a click/tap.
@@ -160,7 +167,7 @@ Construction cost excludes land and finance. Review whether your quote includes 
 Next enter electricity and water **consumption**, not the bill amount:
 
 - Electricity: **kWh**.
-- Water: **kL**.
+- Water: **litres (L)**, with a **million-litre equivalent**. 500,000 L is 0.5 million litres. The tariff calculation converts litres to kL internally.
 - Annual use: enter the whole-year total.
 - Monthly average: enter an average month; the app multiplies it by twelve. A single seasonal month may not represent a full year.
 - Deliberate zero use needs confirmation. Fixed service charges can still apply.
@@ -174,7 +181,7 @@ Reference-rate previews use the same backend tariff function as the final calcul
 
 Connection settings determine which fixed water services apply. Review the price-reference date, wastewater, stormwater and drought settings where relevant.
 
-### Compare — Step 3: Your upgrades
+### Compare — Step 3: Sustainable design
 
 **Choose upgrades** is the itemised comparison. Available choices include insulation, glazing, air sealing/shading, heating and cooling, hot water, solar, rainwater, water-efficient fixtures, lighting, smart controls and sustainable materials.
 
@@ -192,7 +199,7 @@ Advanced sections let you review:
 - System sizes and drawing quantities.
 - Disposal costs and salvage credits.
 
-Review disposal and salvage explicitly, even when the intended amount is zero.
+Choose **Remains in use**, a supported house removal estimate, or manual costs. Estimated removal uses the same allowance for both designs and no unquoted material-sale income; review scope before confirming. Ending a study does not automatically mean demolition.
 
 ### Review before calculating
 
@@ -515,7 +522,7 @@ Start with **Start comparison → Start fresh**.
 | Floor area / storeys / occupants | 220 m² / 1 / 3 |
 | Optional rooms / bathrooms | Keep 3 rooms and 2 bathrooms |
 | Construction budget | Range: AUD 600,000–800,000 |
-| Electricity / water use | 5,200 kWh/year / 200 kL/year |
+| Electricity / water use | 5,200 kWh/year / 200,000 L/year (0.2 million litres) |
 | Distributor / price source | Ausgrid / Sydney reference rates |
 | Price-reference date | 6 October 2026 |
 | Water settings | Water and wastewater connected; stormwater and drought options off |
@@ -555,7 +562,7 @@ These outputs follow the stated model and captured reference data. Changing main
 
 Show Home and the animated building.
 
-> “This is GreenCost Sydney. It compares conventional construction with sustainable upgrades over the building's life. The preview introduces the concept; the calculator uses our entered project details.”
+> “This is GreenCost. It compares conventional construction with sustainable upgrades over the building's life. The preview introduces the concept; the calculator uses our entered project details.”
 
 Show that three and four floors produce different buildings. Choose **Start comparison**.
 

@@ -1,4 +1,4 @@
-# GreenCost Sydney
+# GreenCost
 
 Compare the whole-life cost of a conventional and upgraded building over **30, 40 and 50 years**. GreenCost uses Python for all financial calculations and Three.js for the animated building. Gemini and Tavily are optional.
 
@@ -31,22 +31,22 @@ No API key is needed to calculate, inspect evidence, compare scenarios, or expor
 ## Example 1: explore the supplied house
 
 1. Choose **Explore a sample** or **Try an example**.
-2. Continue through **Building details**, **Budget & bills**, and **Your upgrades**.
+2. Continue through **Building details**, **Budget & bills**, and **Sustainable design**.
 3. Inspect the selected insulation, solar and rainwater upgrades. Prices say **Indicative** because they are not verified builder quotes.
-4. Review disposal and salvage, choose **Review comparison**, check the summary, then choose **Compare my building**.
-5. Read the upfront difference, whole-life costs and break-even. Switch between 30, 40 and 50 years; expand charts or research details when needed, and download PDF, HTML or CSV.
+4. Choose what happens at the end of the study, choose **Review comparison**, check the summary, then choose **Compare my building**.
+5. Read the initial building cost, maintenance, total cost and investment recovery. Switch between 30, 40 and 50 years; expand charts or research details when needed, and download PDF, HTML or CSV.
 
 The sample is an illustration. Do not reuse its costs or consumption as measurements of your own house.
 
 ## Example 2: use a budget range
 
-Choose **Start fresh**. Enter postcode **2000**, a **220 m²** house, **one floor** and **three occupants**. In **Budget & bills**, choose **Budget range** and enter **AUD 600,000–800,000**. The main comparison uses the **AUD 700,000 midpoint**; low and high budgets are recalculated separately.
+Choose **Start fresh**. Enter postcode **2000**, a **220 m²** house. Optional building details let you confirm floors and edit suggested occupants. In **Budget & bills**, choose **Budget range** and enter **AUD 600,000–800,000**. The main comparison uses the **AUD 700,000 midpoint**; low and high budgets are recalculated separately.
 
 Choose **Review & edit cost breakdown** to inspect the generated categories. Quantities and category shares are explicitly labelled estimates. **Find prices for this breakdown** checks up to five material categories through Tavily. A clear tax-inclusive per-unit source-page price can fill automatically when there is one match. Multiple products need selection; ambiguous or missing prices remain **Quote required**. This does not fetch installed builder quotes or guarantee Sydney delivery. The entered budget remains the calculation baseline until you choose **Use edited breakdown as construction total**.
 
-Enter **5,200 kWh** electricity and **200 kL** water annually, or choose **Monthly average** and enter your average month; the app multiplies it by twelve. Select **Ausgrid** as the distributor for this practice example. Use the distributor printed on your own bill for a real project.
+Enter **5,200 kWh** electricity and **200,000 L (0.2 million litres)** water annually, or choose **Monthly average** and enter your average month; the app multiplies it by twelve. Select **Ausgrid** as the distributor for this practice example. Use the distributor printed on your own bill for a real project.
 
-Continue to upgrades and select insulation and solar. Review their installed cost differences; use **Compare two installed quotes** if you know both conventional and sustainable costs for the same scope. Enter disposal and salvage estimates and explicitly confirm zeros. Choose **Review comparison**, check the three summary sections and use their **Edit** buttons if needed. Choose **Compare my building** to calculate.
+Continue to upgrades and select insulation and solar. Review their installed cost differences; use **Compare two installed quotes** if you know both conventional and sustainable costs for the same scope. Keep **Remains in use** for no end-of-period demolition, or choose a supported house removal estimate / manual costs and review them. Choose **Review comparison**, check the three summary sections and use their **Edit** buttons if needed. Choose **Compare my building** to calculate.
 
 Required fields have an **asterisk (*)**. Missing or invalid values show a reason beside the field and focus the first problem. Select the **ⓘ** beside a label for help; it also works with keyboard focus and hover. Numbers can be erased completely; blank and zero have different meanings. Utility reference charges appear before calculation for your selected distributor, water connections and reference date.
 
@@ -177,7 +177,9 @@ To add a region later, create a new `data/regions/<region>/` folder with reviewe
 
 **Tariffs expired:** choose your own utility rates and enter a bill reference, or have the administrator review a new dated official record.
 
-**Solar too large:** reduce the array or override roof area from your drawings. An override is an estimate, not network approval.
+**Solar too large:** the warning shows stored total area, area units, floors, roof area and selected solar size. Choose **Review area, units & floors**, **Edit solar size**, or **Edit measured roof area** to correct the relevant input. If an unintended roof override is present, **Use estimated roof area** removes it. The estimate rechecks automatically after a change. Retrying unchanged inputs cannot fix a sizing constraint; **Retry estimate** is reserved for connection/server failures and now visibly enters the calculating state. A 250 m², single-storey house without a roof override accepts the default 6.6 kW system in this model. Drawing overrides remain estimates, not network approval.
+
+**Changing building type:** switching between House, Apartment building and Commercial starts a fresh building scope, including area, floors, occupants, budgets, bills and upgrades. Project name, postcode and financial study settings remain. Back navigation and clicking the already selected type preserve your inputs. House floor count is shown below the area field; use **Edit floors** for a multi-storey house or **Use one floor** to correct a previously saved count.
 
 **No supplier price:** many products have variant-dependent, pack-based or quote-only pricing. The app retains the labelled estimate and links to the supplier. Check the source and confirm installation, delivery and product suitability before using a price.
 
@@ -186,3 +188,47 @@ To add a region later, create a new `data/regions/<region>/` folder with reviewe
 **Blank number fields:** Backspace now clears values. Complete required inputs before continuing. A zero utility value requires confirmation and models no usage savings.
 
 **Report or chat fails on Vercel:** verify the backend URL, origin allow-list, deployment protection and backend function logs. Do not put provider keys in the frontend.
+
+## Client refresh — 7 October 2026
+
+The calculator automatically saves an unfinished draft and its current step in this browser. Refreshing or leaving Compare and coming back restores it. **My projects** opens saved comparisons and imports a project JSON file; **Save draft** downloads your inputs. Start fresh asks you to confirm before replacing the current draft. Avoid sharing a browser profile for private projects; browser data is not an online account or cross-device backup.
+
+Water consumption uses **litres**, with a million-litre equivalent below the field. Enter 500,000 for half a million litres. Utility rates stay in AUD/kL to match bills; the app converts internally. Monthly values are annualised once.
+
+**House** needs total dwelling floor area in the main size section. Its optional occupancy suggestion uses the dated NSW BASIX energy-modelling assumption, with a manual override. **Apartment building** now compares a whole building: enter **Area per floor** or **Total building area**, and a required floor count. Total area is stored once, so total-area entry is never multiplied again. Previously saved **Apartment unit** projects retain their single-flat scope; they are not silently converted into a building.
+
+For example, select **Apartment building → Area per floor**, enter **500 m²** and **20 floors**. The building total is **10,000 m²**, with **219 estimated occupants** using the illustrative defaults of **75 m² per apartment** and **80% apartment space**. With 50 floors and the same per-floor area, it becomes 25,000 m² and 547 estimated occupants. Alternatively, enter **10,000 m²** using **Total building area** and 20 floors: the estimate remains 219. Changing floors in total-area mode does not change an already combined area. Select **Enter actual number** to override the count; manual counts stay fixed when geometry changes.
+
+The estimate divides gross residential-floor area by assumed apartment size after removing assumed common/service space, then applies the NSW BASIX August 2022 dwelling-level energy occupancy relationship. Review both editable assumptions under **Review the occupancy assumptions**. These defaults are illustrative, not official city density standards, legal capacity, actual resident forecasts, a water prediction or a BASIX assessment. See the [NSW occupancy guidance](https://www.planningportal.nsw.gov.au/sites/default/files/documents/2022/BASIX%20standard%20occupancy%20-%20version%204%20-%2023.08.22%20LMv5.pdf).
+
+Use whole-building budgets and measured/design consumption for this scope. Enter your applicable utility rates with **combined supply charges for all included meters**; single-house reference charges are disabled for apartment buildings. Occupants describe the scenario and do not automatically generate utility bills. Choosing a building clears previous single-property budget, consumption, rates and upgrades so they cannot be mistaken for tower inputs. Generic quantities and upgrade coefficients remain indicative: enter project quotes, actual bathroom totals, maintenance and replacement allowances for lifts, central plant, car parks and other common systems. Solar/tank defaults are capped small systems, not an automatically sized tower design. Ordinary-house demolition guide prices do not apply; use project quotes if removal is assumed.
+
+**Sustainable design** groups features into comfort, clean energy, water and materials. Australian guidance is linked on each card. Heat-pump hot water is offered for a less efficient baseline; already-included features receive no extra benefit. Supply-price lookup remains in the budget breakdown. Installed upgrades still need comparable quotes; a supply price is not an installed quote.
+
+The eight-stage timeline shows actual start/completion events. Gemini and Tavily have separate request outcomes; a configured key alone is not a successful request. Rejected or unavailable Gemini responses use a calculated explanation and say so. Python financial results do not depend on an AI response.
+
+Removal estimates are restricted to supported ordinary house scopes from a dated contractor guide. Both designs use the same allowance, recovered-material income defaults to zero, and manual quotes can override it. End-of-study demolition is optional, not automatic. The initial cost, maintenance present value and total present value are prominent in results and reports. See [client refresh notes](docs/Client-Refresh-Notes.md) for sources and scope.
+
+## Automatic AI fallback
+
+Set server-side keys in `.env` (never `NEXT_PUBLIC_` variables):
+
+```dotenv
+GROQ_API_KEY=your_key_here
+GROQ_MODEL=openai/gpt-oss-20b
+OPENROUTER_API_KEY=your_key_here
+OPENROUTER_MODEL=openrouter/free
+```
+
+Keep your existing `GEMINI_API_KEY` and `GEMINI_MODEL`. Restart the server after editing keys. Order: **OpenRouter → Groq → Gemini → calculated explanation**. Missing keys are skipped. A usable first or second reply stops the chain: later APIs receive no request. Quota, permission, connection, incomplete-text and content-check failures permit the next provider. Each provider has one attempt, bounded HTTP timeouts and its own daily/monthly application caps. These caps are not a shared serverless quota. OpenRouter is restricted to `openrouter/free` or a model ID ending in `:free`; account limits still apply. The free router may choose different available models. Optional AI receives the explanation context/evidence; Python remains responsible for every calculation. The interface identifies the successful provider and reports failures.
+
+
+## Client decision report
+
+PDF and printable HTML reports start with initial building cost, routine maintenance and total cost, then explain savings, investment recovery, selected upgrades, important assumptions and next steps in everyday language. Technical inputs stay available in the project JSON and annual cash-flow CSV instead of being printed as raw records. Maintenance is included in the total, not added to it again.
+
+Downloads contain project-specific paragraphs built from validated inputs, selected upgrades and calculated results. Provider/request diagnostics and metadata replies are kept out of client reports. Reports use the project name in the download filename, with a GreenCost fallback when no name is entered. Exporting makes no new AI request and never accepts browser-supplied financial totals.
+
+The landing-page Three.js preview includes an illustrative 36-second day/night cycle. The sun and moon appear in separate phases, with changing scene light and sky colour. Its pause control freezes the animation; reduced-motion settings and offscreen visibility limit animation. This is a decorative preview, not a local sunrise forecast.
+Traffic disappears at night and returns in daylight, resuming its motion without a jump. The moon advances through eight illustrative phases across successive nights, and soft clouds drift slowly with day/night colours. This accelerated cycle does not follow the real lunar calendar.
+

@@ -97,7 +97,7 @@ def test_reference_rate_preview_matches_calculation_engine():
             inputs=dict(zone=zone,building_type='Apartment',price_date='2026-10-06',water_connected=True,wastewater_connected=True,stormwater=stormwater,drought_tariff=False)
             actual=client.post('/api/v1/reference-rates',json=inputs)
             assert actual.status_code == 200
-            expected=tariffs(Project.model_validate(sample | inputs))
+            expected=tariffs(Project.model_validate(sample | inputs | {"selected_measures": []}))
             assert actual.json()['rates'] == expected
     assert client.post('/api/v1/reference-rates',json=dict(zone='unknown')).status_code == 422
     assert client.post('/api/v1/reference-rates',json=dict(zone='Ausgrid',building_type='Commercial / Other')).status_code == 422

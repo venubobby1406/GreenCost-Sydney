@@ -7,6 +7,18 @@ from backend.app.calculations.lcc import area_m2
 REGION = DATA / "regions/sydney_nsw"
 
 
+class SolarCapacityError(ValueError):
+    """Keep the physical constraint and provide actionable input diagnostics."""
+    def __init__(self, project, quantities):
+        super().__init__(f"Solar array exceeds indicative roof capacity of {quantities['max_solar_kw']:.2f} kW. Review floor area, floors, units and any roof override, or reduce the solar size.")
+        self.details = dict(code="solar_capacity", message=str(self), geometry=dict(
+            area=project.area, area_unit=project.area_unit,
+            area_m2=area_m2(project.area, project.area_unit), floors=project.floors,
+            roof_area_m2=quantities["roof_area_m2"], max_solar_kw=quantities["max_solar_kw"],
+            solar_kw=quantities["solar_kw"],
+            roof_overridden="roof_area_m2" in project.quantity_overrides))
+
+
 def catalogue():
     return json.loads((REGION / "measures.json").read_text(encoding="utf-8"))["measures"]
 
@@ -15,7 +27,7 @@ def measure_costs(p):
     geometry = takeoff(area_m2(p.area, p.area_unit), p.floors, p.bathrooms, p.solar_kw, p.tank_kl, p.quantity_overrides)
     q = geometry["quantities"]
     if "solar_pv" in p.selected_measures and "solar_pv" not in p.code_required_measures and q["solar_kw"] > q["max_solar_kw"] + 1e-9:
-        raise ValueError(f"Solar array exceeds indicative roof capacity of {q['max_solar_kw']:.2f} kW. Reduce size or override roof area.")
+        raise SolarCapacityError(p, q)
     records = []
     # Unprovided prices are conspicuous placeholders; no unverified rebate is applied.
     settings = json.loads((REGION / "assumptions.json").read_text(encoding="utf-8"))

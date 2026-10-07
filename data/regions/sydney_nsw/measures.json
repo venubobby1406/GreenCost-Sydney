@@ -45,7 +45,9 @@
       },
       "life_years": 40,
       "status": "placeholder",
-      "notes": ""
+      "notes": "",
+      "guidance_url": "https://www.yourhome.gov.au/passive-design/insulation",
+      "guidance_checked": "2026-10-07"
     },
     {
       "id": "glazing",
@@ -83,7 +85,9 @@
       },
       "life_years": 35,
       "status": "placeholder",
-      "notes": ""
+      "notes": "",
+      "guidance_url": "https://www.yourhome.gov.au/passive-design/glazing",
+      "guidance_checked": "2026-10-07"
     },
     {
       "id": "airtightness_shading",
@@ -122,7 +126,9 @@
       },
       "life_years": 40,
       "status": "placeholder",
-      "notes": ""
+      "notes": "",
+      "guidance_url": "https://www.yourhome.gov.au/passive-design/shading",
+      "guidance_checked": "2026-10-07"
     },
     {
       "id": "hvac",
@@ -174,12 +180,14 @@
       },
       "life_years": 15,
       "status": "placeholder",
-      "notes": ""
+      "notes": "",
+      "guidance_url": "https://www.yourhome.gov.au/energy/hot-water-systems",
+      "guidance_checked": "2026-10-07"
     },
     {
       "id": "hot_water",
       "name": "Heat pump hot water",
-      "plain_description": "A heat pump water heater that makes hot water with a fraction of the electricity.",
+      "plain_description": "Replace a less efficient baseline water heater with a suitable heat pump. If already included, no additional upgrade benefit is counted.",
       "category": "active",
       "quantity_drivers": [
         "units"
@@ -218,7 +226,9 @@
       },
       "life_years": 15,
       "status": "placeholder",
-      "notes": "Default is net of incentives per the spec; show incentives as a separate line instead."
+      "notes": "Default is net of incentives per the spec; show incentives as a separate line instead.",
+      "guidance_url": "https://www.yourhome.gov.au/energy/hot-water-systems",
+      "guidance_checked": "2026-10-07"
     },
     {
       "id": "solar_pv",
@@ -262,7 +272,9 @@
       },
       "life_years": 25,
       "status": "placeholder",
-      "notes": "Default scales per kW (about $880/kW)."
+      "notes": "Default scales per kW (about $880/kW).",
+      "guidance_url": "https://www.yourhome.gov.au/energy/rooftop-solar",
+      "guidance_checked": "2026-10-07"
     },
     {
       "id": "rainwater",
@@ -307,7 +319,9 @@
       },
       "life_years": 30,
       "status": "placeholder",
-      "notes": ""
+      "notes": "",
+      "guidance_url": "https://www.yourhome.gov.au/water/rainwater",
+      "guidance_checked": "2026-10-07"
     },
     {
       "id": "water_fixtures",
@@ -349,7 +363,9 @@
       },
       "life_years": 20,
       "status": "placeholder",
-      "notes": ""
+      "notes": "",
+      "guidance_url": "https://www.yourhome.gov.au/water/reducing-water-use",
+      "guidance_checked": "2026-10-07"
     },
     {
       "id": "lighting",
@@ -387,7 +403,9 @@
       },
       "life_years": 15,
       "status": "placeholder",
-      "notes": ""
+      "notes": "",
+      "guidance_url": "https://www.yourhome.gov.au/energy/hot-water-systems",
+      "guidance_checked": "2026-10-07"
     },
     {
       "id": "smart_controls",
@@ -423,12 +441,14 @@
       },
       "life_years": 12,
       "status": "placeholder",
-      "notes": "Affects solar self-consumption (25% to 60% in the spec); interacts with solar and hot water."
+      "notes": "Affects solar self-consumption (25% to 60% in the spec); interacts with solar and hot water.",
+      "guidance_url": "https://www.yourhome.gov.au/energy/hot-water-systems",
+      "guidance_checked": "2026-10-07"
     },
     {
       "id": "sustainable_materials",
-      "name": "Sustainable material alternatives",
-      "plain_description": "Lower-impact materials in place of standard ones.",
+      "name": "Lower-impact building materials",
+      "plain_description": "Compare lower-carbon concrete, responsibly sourced timber or reused materials using comparable project quotes. No bill or carbon saving is assumed automatically.",
       "category": "materials",
       "quantity_drivers": [
         "to_be_defined"
@@ -450,7 +470,9 @@
       },
       "life_years": 40,
       "status": "placeholder",
-      "notes": "Out of scope for first release unless the owner defines specific items."
+      "notes": "Out of scope for first release unless the owner defines specific items.",
+      "guidance_url": "https://www.yourhome.gov.au/materials/embodied-energy",
+      "guidance_checked": "2026-10-07"
     }
   ],
   "interaction_notes": [

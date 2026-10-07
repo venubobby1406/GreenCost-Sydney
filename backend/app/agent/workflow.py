@@ -4,6 +4,7 @@ from backend.app.rag.store import retrieve
 from backend.app.research.sources import tariffs, load_sources
 from backend.app.services.analysis import scenarios, assumptions, compute_periods, compute_sensitivity, research_outputs
 from backend.app.services.explanation import explain
+from backend.app.services.ai_fallback import trace as provider_trace
 from backend.app.research.web import research
 
 
@@ -115,8 +116,8 @@ def generate_explanation(state):
             confidence=confidence,
             confidence_reason=reasons[confidence],
             usage=dict(tavily_calls=state.get("web_calls", 0), llm_calls=calls),
-            research_status=dict(gemini=gemini_status, tavily=state.get("web_status", "disabled"), vector_db="none"),
-            limitations=LIMITATIONS,
+            research_status=dict(**provider_trace(), explanation_status=gemini_status, tavily=state.get("web_status", "disabled"), vector_db="none"),
+            limitations=LIMITATIONS + (["Whole apartment building: all budgets, usage and fixed charges must cover the same building scope. Occupants are a planning estimate based on assumed unit size and residential share, not legal capacity or automatic utility use. Generic rectangular quantities and dwelling upgrade coefficients do not model lifts, car parks, central plant, fire systems or complex towers; include applicable project quotes, annual costs and replacement allowances."] if p.building_type == "Apartment Building" else []),
         )
     }
 
@@ -153,14 +154,20 @@ STAGES = {
 def analyse_stream(raw):
     state = {"raw": raw}
     for function in nodes:
+        yield dict(type="stage_start", stage=function.__name__, message=STAGES[function.__name__])
         update = {function.__name__: function(state)}
         for node, values in update.items():
             state.update(values)
             message = STAGES[node]
             if node == "research_online" and values.get("web_status") != "complete":
                 message = "Web research skipped or unavailable; continuing with local PDF evidence"
-            if node == "generate_explanation" and values["result"]["research_status"]["gemini"] != "complete":
-                message = "Calculated explanation ready; Gemini was not used successfully"
-            yield dict(type="stage", stage=node, message=message)
+            if node == "generate_explanation" and values["result"]["research_status"].get("explanation_provider", "calculated") == "calculated":
+                message = "Calculated explanation ready; no AI provider returned usable text"
+            providers = {}
+            if node == "research_online":
+                providers["tavily"] = values.get("web_status", "not_requested")
+            if node == "generate_explanation":
+                providers.update(values["result"]["research_status"])
+            yield dict(type="stage", stage=node, message=message, providers=providers)
             if "result" in values:
                 yield dict(type="result", result=values["result"])

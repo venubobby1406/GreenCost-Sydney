@@ -1,0 +1,22 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const ts=require('../frontend/node_modules/typescript');
+const js=ts.transpileModule(fs.readFileSync('frontend/lib/exports.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+let captured,downloadedName;
+const exportsObject={};
+vm.runInNewContext(js,{exports:exportsObject,URL:{createObjectURL:()=> 'blob:test',revokeObjectURL:()=>{}},Blob,document:{createElement:()=>({click(){downloadedName=this.download;},remove(){}}),body:{appendChild(){}}},setTimeout:()=>{},fetch:async(url,options)=>{captured={url,...JSON.parse(options.body)};return {ok:true,blob:async()=>new Blob(['test'])};}});
+(async()=>{
+ const data={project:{years:40},rates:{electricity_rate:.3},periods:{40:{explanation:['computed','computed','computed','computed','Saved AI advice [S1]']},30:{explanation:['computed','computed','computed','computed']}},evidence:[{source:'Guide',page:0,source_type:'PROJECT_RESEARCH',text:'context'}],research_status:{explanation_provider:'openrouter',openrouter:'complete',groq:'not_requested',gemini:'not_requested'}};
+ await exportsObject.downloadReport(data,40,true);
+ assert.equal(downloadedName,'GreenCost-40-year-report.pdf');
+ data.project.name='Courtyard House';
+ await exportsObject.downloadReport(data,40,true);
+ assert.equal(downloadedName,'Courtyard-House-40-year-report.pdf');
+ assert.equal(exportsObject.reportFilename('../House: "A"\r\n',40,true),'House-A-40-year-report.pdf');
+ assert.equal(exportsObject.reportFilename('Maison été',40,true),'Maison-été-40-year-report.pdf');
+ assert.equal(captured.url,'/api/report/pdf');assert.equal(captured.commentary.provider,'openrouter');
+ assert.equal(captured.commentary.paragraphs[0],'Saved AI advice [S1]');assert.equal(captured.commentary.evidence[0].page,null);
+ assert.equal(captured.commentary.statuses.gemini,'not_requested');
+ await exportsObject.downloadReport(data,30,false);
+ assert.equal(captured.url,'/api/report');assert.equal(captured.commentary.provider,'calculated');assert.equal(captured.commentary.paragraphs.length,0);
+ console.log('Report export checks passed: saved AI/evidence/provider retained; other horizons do not claim the same AI commentary.');
+})().catch(e=>{console.error(e);process.exitCode=1;});

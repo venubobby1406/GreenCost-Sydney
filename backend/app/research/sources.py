@@ -77,6 +77,8 @@ def load_sources() -> list[dict]:
 
 
 def tariffs(project):
+    if project.building_type == "Apartment Building" and project.tariff_mode != "user":
+        raise ValueError("Use whole-building utility rates and aggregate fixed charges; single-house references do not represent an apartment block.")
     if project.tariff_mode == "user":
         return dict(
             electricity_rate=project.electricity_rate,

@@ -84,7 +84,7 @@ def test_offline_full_workflow():
         id = result["id"]
         report = client.get(f"/api/analyses/{id}/report")
         assert report.status_code == 200 and "<svg" in report.text
-        assert "Complete input record" in report.text
+        assert "complete input record" in report.text
         assert client.get(f"/api/analyses/{id}/cashflows").status_code == 200
         answer = client.post(
             f"/api/analyses/{id}/chat", json={"question": "What if electricity rises 5% per year?"}

@@ -101,7 +101,7 @@ def test_stateless_hosted_report_and_chat_need_no_saved_files(monkeypatch, tmp_p
         reader = PdfReader(io.BytesIO(pdf.content))
         assert len(reader.pages) >= 3
         text = ''.join(p.extract_text() for p in reader.pages)
-        assert 'GREENCOST SYDNEY' in text and 'Complete input record' in text
+        assert 'GREENCOST' in text and 'GREENCOST SYDNEY' not in text and 'complete input record' in text
         assert all(len(p.extract_text().split()) > 20 for p in reader.pages)
         answer = client.post('/api/chat',json=snapshot | {'question':'What if discount is 7%?'}).json()
         assert 'what_if' in answer

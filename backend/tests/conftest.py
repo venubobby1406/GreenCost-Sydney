@@ -4,8 +4,10 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def isolated_runtime(tmp_path, monkeypatch):
-    from backend.app.services import storage, budget
+    from backend.app.services import storage, budget, supplier_prices
     monkeypatch.setenv("GEMINI_API_KEY", "")
+    monkeypatch.setenv("GROQ_API_KEY", "")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "")
     monkeypatch.setenv("TAVILY_API_KEY", "")
     monkeypatch.setenv("SAVE_LOCAL_ANALYSES", "true")
     monkeypatch.setenv("REQUESTS_PER_MINUTE", "120")
@@ -19,3 +21,7 @@ def isolated_runtime(tmp_path, monkeypatch):
     monkeypatch.setattr(storage, "DATA", tmp_path)
     monkeypatch.setattr(budget, "DATA", tmp_path)
     monkeypatch.setattr(budget, "_memory", {})
+
+    monkeypatch.setattr(supplier_prices, "DATA", tmp_path)
+    monkeypatch.setattr(supplier_prices, "_memory", {})
+    monkeypatch.setattr(supplier_prices, "_attempts", {})

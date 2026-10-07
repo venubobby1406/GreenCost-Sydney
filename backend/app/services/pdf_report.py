@@ -1,134 +1,116 @@
-"""Portable A4 report built from computed results, with repeatable tables."""
+"""Readable A4 decision report; detailed input records remain in JSON/CSV exports."""
 import io
-import json
 from html import escape
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
-from reportlab.graphics.shapes import Drawing, PolyLine, String, Line
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, KeepTogether
 from backend.app.services.explanation import money
+from backend.app.services.client_report import report_content, LABELS
 
 
 def pdf_report(result, years):
     out = io.BytesIO()
+    view = report_content(result, years)
+    p, r = view["project"], view["period"]
+    green, pale, ink = map(colors.HexColor, ("#194b3a", "#edf4ef", "#26382f"))
     styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle(name="SmallText", fontName="Helvetica", fontSize=8, leading=11, spaceAfter=5, wordWrap="CJK"))
+    styles["Normal"].fontName = "Helvetica"
     styles["Normal"].fontSize = 10
     styles["Normal"].leading = 15
-    styles["Heading2"].keepWithNext = True
-    styles["Heading3"].keepWithNext = True
+    styles["Normal"].spaceAfter = 9
+    styles["Normal"].textColor = ink
+    for name in ("Heading1", "Heading2", "Heading3"):
+        styles[name].textColor = green
+        styles[name].keepWithNext = True
+    styles.add(ParagraphStyle(name="SmallText", fontName="Helvetica", fontSize=8, leading=11, spaceAfter=5, textColor=ink, wordWrap="CJK"))
+    styles.add(ParagraphStyle(name="Verdict", fontName="Helvetica-Bold", fontSize=17, leading=23, textColor=green, spaceAfter=12))
     story = []
-    r = result["periods"][str(years)]
-
-    def plain(text):
-        return str(text).replace("–", "-").replace("—", "-").replace("→", "to").replace("²", "2").replace("Σ", "Sum").replace("−", "-").replace("’", "'").replace("“", '"').replace("”", '"').encode("latin-1", "replace").decode("latin-1")
-
-    def paragraph(text, style="Normal"):
+    def plain(value):
+        return str(value).translate(str.maketrans({"–":"-","—":"-","→":"to","²":"2","³":"3","×":"x","Σ":"Sum","−":"-","’":"'","“":'"',"”":'"'})).encode("latin-1", "replace").decode("latin-1")
+    def para(text, style="Normal"):
         return Paragraph(escape(plain(text)), styles[style])
-
+    def add(text, style="Normal"):
+        story.append(para(text,style))
     def heading(text):
-        story.append(paragraph(text, "Heading2"))
+        add(text,"Heading2")
+    def table(headers, rows, widths, highlight_last=False):
+        data=[[para(x,"SmallText") for x in headers]]+[[para(x,"SmallText") for x in row] for row in rows]
+        t=Table(data,colWidths=widths,repeatRows=1,hAlign="LEFT")
+        commands=[("BACKGROUND",(0,0),(-1,0),pale),("VALIGN",(0,0),(-1,-1),"TOP"),("TOPPADDING",(0,0),(-1,-1),7),("BOTTOMPADDING",(0,0),(-1,-1),7),("LINEBELOW",(0,0),(-1,-1),.4,colors.HexColor("#dce5df"))]
+        if highlight_last: commands.append(("BACKGROUND",(0,-1),(-1,-1),pale))
+        t.setStyle(TableStyle(commands));story.extend([t,Spacer(1,10)])
+    def page(title,subtitle):
+        if story: story.append(PageBreak())
+        add(title,"Heading1");add(subtitle,"SmallText");story.append(Spacer(1,8))
 
-    def table(headers, rows, widths):
-        values = [[paragraph(x, "SmallText") for x in headers]] + [[paragraph(x, "SmallText") for x in row] for row in rows]
-        t = Table(values, colWidths=widths, repeatRows=1, hAlign="LEFT")
-        t.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#e8efdf")),
-                               ("VALIGN", (0, 0), (-1, -1), "TOP"), ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
-                               ("TOPPADDING", (0, 0), (-1, -1), 7),
-                               ("LINEBELOW", (0, 0), (-1, -1), .4, colors.HexColor("#d9e1d4"))]))
-        story.append(t)
+    page("Your building cost comparison",f"GREENCOST | {years}-year decision report | All amounts in Australian dollars")
+    add("Project: " + (p["name"] or "Untitled project"),"Heading2")
+    add(view["warning"],"SmallText")
+    add(view["verdict"],"Verdict")
+    table(["Cost to compare","Conventional building","Sustainable building"],[
+        ["Initial building cost",money(r["conventional"]["components"]["capital"]),money(r["sustainable"]["components"]["capital"])],
+        [f"Routine maintenance over {years} years",money(r["conventional"]["components"]["maintenance"]),money(r["sustainable"]["components"]["maintenance"])],
+        [f"TOTAL cost over {years} years",money(r["conventional"]["total_lcc"]),money(r["sustainable"]["total_lcc"])],
+    ],[195,155,155],True)
+    add("The maintenance row is already included in the total. Future bills, repairs, equipment replacements and end-of-period costs are converted to today's equivalent value using your discount rate. These totals are not a sum of future invoices.","SmallText")
+    heading("What this means for your decision")
+    for text in view["findings"]: add(text)
+    add(f"Scope: {p['building_type']} | Postcode {p['postcode']} | {p['area']*(.092903 if p['area_unit']=='ft²' else 1):,.1f} m2 total floor area | {p['floors']} floor(s).","SmallText")
+    add("Annual water: " + f"{p['water_kl']*1000:,.0f} L ({p['water_kl']/1000:g} million litres).","SmallText")
 
-    story.extend([paragraph("GREENCOST SYDNEY", "Title"), paragraph(result["project"]["name"], "Heading1"),
-                  paragraph(f"{years}-year life-cycle cost comparison | AUD, present value"),
-                  paragraph(f"Mode: {result['project'].get('mode', 'literature')} | Preset: {result['project'].get('preset', 'code_minimum_7star')}"),
-                  paragraph(f"Assumption set {result.get('assumption_version')} | Price reference {result.get('price_snapshot_date')}"),
-                  Spacer(1, 15)])
-    table(["Result", "Value"], [["Conventional LCC", money(r["conventional"]["total_lcc"])],
-                                 ["Sustainable LCC", money(r["sustainable"]["total_lcc"])],
-                                 ["Signed saving", money(r["savings_aud"])],
-                                 ["Saving relative to conventional", f"{r['savings_percent']:.2f}%"],
-                                 ["First discounted break-even", "Not reached" if r["break_even_year"] is None else f"Year {r['break_even_year']}"],
-                                 ["Equivalent annual sustainable cost", money(r["sustainable"]["eauc"])]], [300, 205])
-    story.append(paragraph(f"Under the stated assumptions, the sustainable case has a {abs(r['savings_percent']):.2f}% {'lower' if r['savings_aud'] >= 0 else 'higher'} modelled whole-life cost. Indicative inputs are not verified quotations."))
-    if result.get("budget_scenarios"):
-        heading("Construction budget range")
-        story.append(paragraph("Headline results use the midpoint. Each case recalculates the same upgrade package and financial assumptions."))
-        table(["Budget case", "Conventional LCC", "Sustainable LCC", "Signed saving"],
-              [[label, money(v[str(years)]["conventional"]), money(v[str(years)]["sustainable"]), money(v[str(years)]["savings_aud"])] for label, v in result["budget_scenarios"].items()], [110, 135, 135, 125])
-    if result["project"].get("cost_plan_note"):
-        story.append(paragraph("Cost breakdown basis: " + result["project"]["cost_plan_note"], "SmallText"))
-    heading("Cumulative discounted cost")
-    drawing = Drawing(505, 185)
-    maximum = max(max(row["cumulative_pv"] for row in r[s]["cashflows"]) for s in ("conventional", "sustainable"))
-    minimum = min(0, min(min(row["cumulative_pv"] for row in r[s]["cashflows"]) for s in ("conventional", "sustainable")))
-    drawing.add(Line(5, 20, 495, 20, strokeColor=colors.grey))
-    for scenario, colour in (("conventional", "#9b8c77"), ("sustainable", "#31533f")):
-        points = [v for row in r[scenario]["cashflows"] for v in (5 + 490 * row["year"] / years, 25 + 125 * (row["cumulative_pv"] - minimum) / max(maximum - minimum, 1))]
-        drawing.add(PolyLine(points, strokeColor=colors.HexColor(colour), strokeWidth=2))
-    drawing.add(String(5, 6, "Year 0", fontSize=8))
-    drawing.add(String(455, 6, f"Year {years}", fontSize=8))
-    drawing.add(String(5, 170, "Green: sustainable | Taupe: conventional | cumulative present value", fontSize=8))
-    story.append(drawing)
-    heading("Cost categories and contributions")
-    table(["Category", "Conventional", "Sustainable", "Signed saving"],
-          [[k, money(v), money(r["sustainable"]["components"][k]), money(r["component_savings"][k])] for k, v in r["conventional"]["components"].items()], [130, 125, 125, 125])
-    heading("Interpretation")
-    story.extend(paragraph(p) for p in r["explanation"])
+    page("Why the costs differ","Explain the result before reviewing the assumptions.")
+    heading("Your project explained")
+    for text in view["project_explanation"]: add(text)
     if result.get("measures"):
-        heading("Selected upgrades (installed differences, including GST)")
-        table(["Upgrade", "Quantity / basis", "Net premium", "Source / status"],
-              [[m["name"], f"{m['quantity']:.2f} {m['quantity_driver'].replace('_', ' ')}", money(m["premium"]), f"{m['badge']} - {m['source']} ({m['price_date']})"] for m in result["measures"]], [140, 120, 90, 155])
-        heading("Marginal upgrade contributions")
-        story.append(paragraph("Upgrades are added in catalogue order. Interactions are the difference from modelling each upgrade alone; contributions reconcile to total signed savings."))
-        table(["Upgrade", "Marginal saving", "Standalone saving", "Interaction"],
-              [[m["name"], money(m["marginal_savings"]), money(m["standalone_savings"]), money(m["interaction_adjustment"])]
-               for m in result["measure_contributions"][str(years)]], [160, 115, 115, 115])
-        heading("Price uncertainty (indicative ranges)")
-        table(["Price scenario", "Signed saving", "Break-even"],
-              [[label, money(v[str(years)]["savings_aud"]), v[str(years)]["break_even_year"] or "Not reached"]
-               for label, v in result["price_sensitivity"].items()], [165, 170, 170])
-    heading("Sensitivity: signed savings")
-    cells = [c for c in result["sensitivity"] if c["years"] == years]
-    table(["Discount / energy growth", "2%", "3%", "4%", "5%"],
-          [[f"{d}%"] + [money(next(c["savings_aud"] for c in cells if round(c["discount"] * 100) == d and round(c["energy_escalation"] * 100) == e)) for e in (2, 3, 4, 5)] for d in (4, 5, 6, 7)], [165, 85, 85, 85, 85])
-    if result.get("literature_scenarios"):
-        heading("Literature-parameter scenarios")
-        table(["Scenario", "Signed saving", "Saving %", "Break-even"],
-              [[label, money(v[str(years)]["savings_aud"]), f"{v[str(years)]['savings_percent']:.2f}%", v[str(years)]["break_even_year"] or "Not reached"] for label, v in result["literature_scenarios"].items()], [125, 145, 100, 135])
-    story.append(PageBreak())
-    heading("Assumptions and provenance")
-    def display(value):
-        return f"{value:,.4f}".rstrip('0').rstrip('.') if isinstance(value, float) else str(value)
-    table(["Assumption", "Value / unit", "Source"], [[a["name"].replace('_', ' '), f"{display(a['value'])} {a['unit']}", a["source"]] for a in result["assumptions"]], [155, 130, 220])
-    heading("Sources")
-    for s in result["sources"]:
-        story.extend([paragraph(s["organisation"] + " - " + s["title"], "Heading3"), paragraph(s["url"], "SmallText"),
-                      paragraph(f"Effective {s['effective_from']} to {s['effective_to'] or 'reference period'}. Accessed {s['retrieved_at']}. {s['notes']}", "SmallText")])
-    heading("Research evidence")
-    for i, evidence in enumerate(result["evidence"]):
-        story.extend([paragraph(f"[S{i + 1}] {evidence['source']} | page {evidence['page']} | {evidence['source_type']}", "Heading3"),
-                      paragraph(evidence.get("text", ""), "SmallText")])
-    heading("Limitations")
-    story.extend(paragraph(x) for x in result["limitations"])
-    heading("Complete input record")
-    records = []
-    for key, value in result["project"].items():
-        if isinstance(value, list) and value:
-            records.extend([f"{key.replace('_', ' ')} #{i + 1}", json.dumps(item, ensure_ascii=False)] for i, item in enumerate(value))
-        elif isinstance(value, dict) and value:
-            records.extend([f"{key.replace('_', ' ')} / {name}", json.dumps(item, ensure_ascii=False)] for name, item in value.items())
-        else:
-            records.append([key.replace('_', ' '), json.dumps(value, ensure_ascii=False)])
-    table(["Input", "Recorded value"],
-          records,
-          [155, 350])
+        heading("The upgrades you selected")
+        table(["Upgrade","Extra initial cost","Price basis"],[[m["name"] + " - " + m["description"],money(m["premium"]),m["badge"]] for m in view["upgrades"]],[240,125,140])
+        add("These are installed cost differences against the baseline, including GST. 'Indicative' means an estimate, not a builder's quotation. An already included feature has no additional cost or benefit.","SmallText")
+    else:
+        add("No individually priced upgrades were selected." if p.get("mode")=="itemised" else "This comparison uses a combined research package rather than individually priced upgrades.")
 
-    def footer(canvas, doc):
-        canvas.setFont("Helvetica", 8)
-        canvas.setFillColor(colors.HexColor("#53634c"))
-        canvas.drawString(45, 25, "GreenCost Sydney | Indicative scenario, not a compliance assessment")
-        canvas.drawRightString(A4[0] - 45, 25, f"Page {doc.page}")
-    SimpleDocTemplate(out, pagesize=A4, rightMargin=45, leftMargin=45, topMargin=40, bottomMargin=45,
-                      title="GreenCost Sydney life-cycle report", author="GreenCost Sydney").build(story, onFirstPage=footer, onLaterPages=footer)
+    page("Costs and decision checks","Future costs shown as today's equivalent value.")
+    heading("Where your money goes")
+    table([f"Cost over {years} years","Conventional","Sustainable"],[[LABELS.get(k,k),money(v),money(r["sustainable"]["components"][k])] for k,v in r["conventional"]["components"].items()],[195,155,155])
+    add("All future-cost rows show today's equivalent value. Recovered-material value is a credit; a negative figure reduces total cost. Electricity includes supply charges and any modelled solar export credit.","SmallText")
+    heading("Could the answer change?")
+    add(view["robustness"])
+    table(["Study period","Conventional total","Sustainable total"],[[f"{n} years",money(v["conventional"]["total_lcc"]),money(v["sustainable"]["total_lcc"])] for n,v in result["periods"].items()],[195,155,155])
+    if result.get("budget_scenarios"):
+        heading("Your construction budget range")
+        table(["Budget case", "Conventional total", "Sustainable total"], [[label.title(), money(v[str(years)]["conventional"]), money(v[str(years)]["sustainable"])] for label,v in result["budget_scenarios"].items()], [195,155,155])
+    page("Your assumptions and next steps","Check the inputs that could change the decision.")
+    heading("Your key inputs")
+    table(["Input","Value / explanation"],view["inputs"],[190,315])
+    add("End-of-period plan: " + p.get("terminal_basis","Review your end-of-period assumptions."),"SmallText")
+    if result.get("budget_scenarios"):
+        add("A budget range was entered. Headline figures use the midpoint; low and high budgets are alternative starting-cost scenarios.","SmallText")
+    heading("Before committing to the design")
+    for i,text in enumerate(view["next_steps"],1): add(f"{i}. {text}","SmallText")
+    if p["building_type"]=="Apartment Building":
+        add("Whole apartment building: include all relevant apartments, lifts, car parks, central plant, fire systems and common services in costs. The generic model does not automatically price these systems. Occupancy is a planning estimate, not a permitted capacity.","SmallText")
+
+    page("Evidence and report notes","Sources support the assumptions; they are not a guarantee of your project's performance.")
+    heading("Utility and cost references")
+    for source in result.get("sources",[]):
+        story.append(KeepTogether([para(source["organisation"] + " - " + source["title"],"Heading3"),para(source["url"],"SmallText"),para(f"Reference period: {source.get('effective_from','not recorded')} to {source.get('effective_to') or 'not specified'}. Checked: {source.get('retrieved_at','not recorded')}.","SmallText")]))
+    heading("Supporting research")
+    evidence=result.get("evidence",[])[:8]
+    for i,e in enumerate(evidence,1):
+        location=f"page {e['page']}" if e.get("page") else "web reference"
+        kind="Included project research" if e.get("source_type")=="PROJECT_RESEARCH" else "Research / web context"
+        add(f"[S{i}] {e['source']} - {location}. {kind}.","SmallText")
+        if e.get("url"): add(e["url"],"SmallText")
+    if not evidence: add("No research references were retained for this comparison.","SmallText")
+    heading("What this report can and cannot tell you")
+    add("This is a financial comparison of the entered scenarios. It does not certify BASIX, NatHERS, structural design or building compliance. Sustainability features may offer comfort or environmental benefits that this cost calculation does not measure.","SmallText")
+    add("Research assumptions and generic building quantities need project confirmation. Demonstration values and indicative prices must be replaced with applicable bills, plans and installed quotes. Higher cost for the sustainable option is a valid result.","SmallText")
+    add("For a complete input record, save your project JSON. For each year's costs, download the cash-flow CSV. Those files retain the technical detail without filling this client report with raw data.","SmallText")
+    add(f"Price reference: {result.get('price_snapshot_date') or p['price_date']} | Assumption set: {result.get('assumption_version','not recorded')}.","SmallText")
+    def footer(canvas,doc):
+        canvas.setStrokeColor(colors.HexColor("#dce5df"));canvas.line(45,39,A4[0]-45,39)
+        canvas.setFont("Helvetica",8);canvas.setFillColor(green)
+        canvas.drawString(45,25,"GreenCost | Planning estimate | AUD")
+        canvas.drawRightString(A4[0]-45,25,f"Page {doc.page}")
+    SimpleDocTemplate(out,pagesize=A4,rightMargin=45,leftMargin=45,topMargin=40,bottomMargin=52,title=plain((p["name"] or "Untitled project") + " - GreenCost decision report"),author="GreenCost").build(story,onFirstPage=footer,onLaterPages=footer)
     return out.getvalue()

@@ -1,149 +1,40 @@
+"""Readable browser-print report using the same content as the downloadable PDF."""
 from html import escape
-import json
 from backend.app.services.explanation import money
+from backend.app.services.client_report import report_content, LABELS
 
 
 def report_html(result, years):
-    r = result["periods"][str(years)]
-
+    v = report_content(result, years)
+    p, r = v["project"], v["period"]
+    def text(value): return escape(str(value))
+    def para(value): return "<p>" + text(value) + "</p>"
     def table(headers, rows):
-        return (
-            "<table><thead><tr>"
-            + "".join("<th>" + escape(str(h)) + "</th>" for h in headers)
-            + "</tr></thead><tbody>"
-            + "".join("<tr>" + "".join("<td>" + escape(str(v)) + "</td>" for v in row) + "</tr>" for row in rows)
-            + "</tbody></table>"
-        )
-
-    max_y = max(x["cumulative_pv"] for s in ("conventional", "sustainable") for x in r[s]["cashflows"])
-    min_y = min(0, min(x["cumulative_pv"] for s in ("conventional", "sustainable") for x in r[s]["cashflows"]))
-
-    def line(s, color):
-        points = " ".join(
-            f"{30 + 640 * x['year'] / years:.2f},{220 - 180 * (x['cumulative_pv'] - min_y) / max(max_y - min_y, 1):.2f}"
-            for x in r[s]["cashflows"]
-        )
-        return f'<polyline points="{points}" fill="none" stroke="{color}" stroke-width="3"/>'
-
-    chart = f'<svg viewBox="0 0 700 260" role="img" aria-label="Cumulative discounted costs"><path d="M30 20V220H670" fill="none" stroke="#aaa"/>{line("conventional", "#827664")}{line("sustainable", "#38604b")}<text x="30" y="245">Year 0</text><text x="610" y="245">Year {years}</text><text x="35" y="18">Cumulative PV (AUD), top scale {money(max_y)}</text></svg>'
-    colors = ["#38604b", "#827664", "#99ab8e", "#b3a686", "#87a3a0", "#cbbb9f", "#819079"]
-    positive_keys = [k for k in r["conventional"]["components"] if k != "residual"]
-    component_max = max(sum(r[s]["components"][k] for k in positive_keys) for s in ("conventional", "sustainable"))
-    bars = []
-    for n, scenario in enumerate(("conventional", "sustainable")):
-        x, y = 120.0, 35 + n * 75
-        bars.append(f'<text x="8" y="{y + 24}">{scenario.capitalize()}</text>')
-        for i, key in enumerate(positive_keys):
-            value = r[scenario]["components"][key]
-            width = max(0.0, value) / max(component_max, 1) * 550
-            bars.append(
-                f'<rect x="{x:.2f}" y="{y}" width="{width:.2f}" height="36" fill="{colors[i]}" ><title>{key}: {money(value)}</title></rect>'
-            )
-            x += width
-    legend = "".join(
-        f'<rect x="{10 + i * 98}" y="190" width="9" height="9" fill="{colors[i]}"/><text x="{23 + i * 98}" y="199" font-size="10">{key}</text>'
-        for i, key in enumerate(positive_keys)
-    )
-    component_chart = (
-        '<svg viewBox="0 0 700 225" role="img" aria-label="Present value cost components">'
-        + "".join(bars)
-        + legend
-        + "</svg>"
-    )
-    budget_section = ""
-    if result.get("budget_scenarios"):
-        budget_section = "<h2>Construction budget range</h2><p>Headline results use the midpoint.</p>" + table(["Case", "Conventional LCC", "Sustainable LCC", "Signed saving"], [[label, money(v[str(years)]["conventional"]), money(v[str(years)]["sustainable"]), money(v[str(years)]["savings_aud"])] for label, v in result["budget_scenarios"].items()])
-    sections = [
-        budget_section,
-        "<p>" + escape(result["project"].get("cost_plan_note", "")) + "</p>",
-        f'<h1>GreenCost Sydney</h1><p class="eyebrow">LIFE-CYCLE COST STUDY · {years} YEARS</p><h2>{escape(result["project"]["name"])}</h2>',
-        f"<p>{escape(result['confidence'])} — {escape(result['confidence_reason'])}</p>",
-        table(
-            ["Measure", "Value"],
-            [
-                ["Conventional LCC", money(r["conventional"]["total_lcc"])],
-                ["Sustainable LCC", money(r["sustainable"]["total_lcc"])],
-                ["Sustainable equivalent annual cost", money(r["sustainable"]["eauc"])],
-                ["Signed savings", money(r["savings_aud"])],
-                [
-                    "Savings percentage",
-                    f"{r['savings_percent']:.2f}%" if r["savings_percent"] is not None else "Not defined",
-                ],
-                [
-                    "First break-even year",
-                    r["break_even_year"] if r["break_even_year"] is not None else "None within period",
-                ],
-            ],
-        ),
-        "<h2>Cumulative discounted cost</h2><p>Green: sustainable · Taupe: conventional</p>" + chart,
-        "<h2>Cost components (present value)</h2>"
-        + component_chart
-        + "<p>Residual value is a credit and is shown separately in the table.</p>"
-        + table(
-            ["Component", "Conventional", "Sustainable"],
-            [
-                [k, money(v), money(r["sustainable"]["components"][k])]
-                for k, v in r["conventional"]["components"].items()
-            ],
-        ),
-        "<h2>Interpretation</h2>" + "".join("<p>" + escape(p) + "</p>" for p in r["explanation"]),
-        "<h2>Assumptions and provenance</h2>"
-        + table(
-            ["Assumption", "Value", "Unit", "Source"],
-            [[a[k] for k in ("name", "value", "unit", "source")] for a in result["assumptions"]],
-        ),
-        "<h2>Sensitivity (signed AUD savings)</h2>"
-        + table(
-            ["Years", "Discount", "Energy escalation", "Savings", "Break-even"],
-            [
-                [
-                    s["years"],
-                    f"{s['discount']:.0%}",
-                    f"{s['energy_escalation']:.0%}",
-                    money(s["savings_aud"]),
-                    s["break_even_year"] if s["break_even_year"] is not None else "None",
-                ]
-                for s in result["sensitivity"]
-            ],
-        ),
-        "<h2>Evidence and sources</h2>"
-        + "".join(
-            f'<p><strong>{escape(s["organisation"])}</strong> — {escape(s["title"])}<br><a href="{escape(s["url"], quote=True)}">{escape(s["url"])}</a><br>Effective {s["effective_from"]} to {s["effective_to"] or "reference period"}; retrieved {s["retrieved_at"]}. {escape(s["notes"])}</p>'
-            for s in result["sources"]
-        ),
-        "<h2>PDF and web research</h2>"
-        + "".join(
-            f"<p>[S{i+1}] {escape(e['source'])} — {'page ' + str(e['page']) if e['page'] else 'web context'}, {escape(e['source_type'])}</p>"
-            + (f'<p><a href="{escape(e["url"], quote=True)}">Source page</a></p>' if e.get("url") else "")
-            + "<p>" + escape(e.get("text", "")) + "</p>" for i, e in enumerate(result["evidence"])
-        ),
-        "<h2>Limitations</h2><ul>" + "".join("<li>" + escape(x) + "</li>" for x in result["limitations"]) + "</ul>",
-        "<h2>Complete input record</h2><pre>"
-        + escape(json.dumps(result["project"], indent=2, ensure_ascii=False))
-        + "</pre>",
-        f"<p>Analysis {escape(result['id'])} · {escape(result['created_at'])}. Generated from saved deterministic results. Browser Print → Save as PDF.</p>",
-    ]
-    sections.insert(1, f"<p>Mode: {escape(result['project'].get('mode', 'literature'))} · Assumption version {escape(str(result.get('assumption_version')))} · Price reference {escape(str(result.get('price_snapshot_date')))}</p>")
-    details = ""
+        return "<table><thead><tr>" + "".join("<th>"+text(h)+"</th>" for h in headers) + "</tr></thead><tbody>" + "".join("<tr>" + "".join("<td>"+text(x)+"</td>" for x in row) + "</tr>" for row in rows) + "</tbody></table>"
+    maximum=max(1,max(row["cumulative_pv"] for s in ("conventional","sustainable") for row in r[s]["cashflows"]))
+    minimum=min(0,min(row["cumulative_pv"] for s in ("conventional","sustainable") for row in r[s]["cashflows"]))
+    chart='<svg viewBox="0 0 700 225" role="img" aria-label="Total costs over time in today equivalent dollars">'
+    for scenario,colour in (("conventional","#8b8276"),("sustainable","#194b3a")):
+        points=" ".join(f"{30+640*row['year']/years:.1f},{190-155*(row['cumulative_pv']-minimum)/max(maximum-minimum,1):.1f}" for row in r[scenario]["cashflows"])
+        chart+=f'<polyline points="{points}" fill="none" stroke="{colour}" stroke-width="3"/>'
+    chart+=f'<text x="30" y="218">Year 0</text><text x="610" y="218">Year {years}</text></svg>'
+    body='<section><span class="brand">GREENCOST</span><h1>Your building cost comparison</h1><h2>'+text('Project: ' + (p["name"] or "Untitled project"))+'</h2>'+para(f"{years}-year decision report | AUD")+'<p class="notice">'+text(v["warning"])+'</p><p class="verdict">'+text(v["verdict"])+'</p>'
+    body+=table(["Cost to compare","Conventional building","Sustainable building"],[["Initial building cost",money(r["conventional"]["components"]["capital"]),money(r["sustainable"]["components"]["capital"])],[f"Routine maintenance over {years} years",money(r["conventional"]["components"]["maintenance"]),money(r["sustainable"]["components"]["maintenance"])],[f"TOTAL cost over {years} years",money(r["conventional"]["total_lcc"]),money(r["sustainable"]["total_lcc"])]])
+    body+=para("Maintenance is already included in the total. Future costs are converted to today's equivalent using the selected discount rate; these figures are not a sum of future invoices.")+"<h2>What this means for your decision</h2>"+"".join(para(t) for t in v["findings"])+"</section>"
+    body+='<section><h1>Why the costs differ</h1><h2>'+text("Your project explained")+'</h2>'+"".join(para(t) for t in v["project_explanation"])+"<h2>Where your money goes</h2>"
+    body+=table([f"Cost over {years} years","Conventional","Sustainable"],[[LABELS.get(k,k),money(value),money(r["sustainable"]["components"][k])] for k,value in r["conventional"]["components"].items()])
+    body+=para("All future costs show today's equivalent value. Recovered-material value is a credit. Electricity includes supply charges and any modelled solar export credit.")
     if result.get("measures"):
-        details += "<h2>Selected upgrades: installed differences including GST</h2>" + table(
-            ["Upgrade", "Quantity / basis", "Premium", "Source / status"],
-            [[m["name"], f"{m['quantity']:.2f} {m['quantity_driver'].replace('_', ' ')}", money(m["premium"]),
-              f"{m['badge']}: {m['source']} ({m['price_date']})"] for m in result["measures"]])
-        details += "<h2>Marginal upgrade contributions</h2><p>Measures are added in catalogue order; interactions reconcile standalone and combined savings.</p>" + table(
-            ["Upgrade", "Marginal savings", "Standalone savings", "Interaction"],
-            [[m["name"], money(m["marginal_savings"]), money(m["standalone_savings"]), money(m["interaction_adjustment"])]
-             for m in result["measure_contributions"][str(years)]])
-        details += "<h2>Indicative price uncertainty</h2>" + table(["Prices", "Signed savings", "Break-even"],
-            [[level, money(value[str(years)]["savings_aud"]), value[str(years)]["break_even_year"] or "Not reached"]
-             for level, value in result["price_sensitivity"].items()])
-    elif result.get("literature_scenarios"):
-        details += "<h2>Literature-parameter scenarios</h2>" + table(["Scenario", "Signed savings", "Break-even"],
-            [[level, money(value[str(years)]["savings_aud"]), value[str(years)]["break_even_year"] or "Not reached"]
-             for level, value in result["literature_scenarios"].items()])
-    sections.insert(7, details)
-    return (
-        '<!doctype html><html lang="en"><meta charset="utf-8"><title>GreenCost Sydney report</title><style>body{font:14px/1.6 Arial,sans-serif;color:#253b30;max-width:960px;margin:40px auto;padding:0 24px}h1{font-size:40px}h2{margin-top:32px}.eyebrow{letter-spacing:3px}table{width:100%;border-collapse:collapse;font-size:12px}td,th{border-bottom:1px solid #ddd;padding:8px;text-align:left;overflow-wrap:anywhere}th{background:#e9eee9}svg{width:100%}pre{white-space:pre-wrap;font-size:11px}a{color:#38604b;overflow-wrap:anywhere}@media print{body{margin:0}tr,svg{break-inside:avoid}h2{break-after:avoid}thead{display:table-header-group}@page{size:A4;margin:16mm}}</style><body>'
-        + "".join(sections)
-        + "</body></html>"
-    )
+        body+="<h2>The upgrades you selected</h2>"+table(["Upgrade","Extra initial cost","Price basis"],[[m["name"]+" - "+m["description"],money(m["premium"]),m["badge"]] for m in v["upgrades"]])+para("Installed differences include GST. Indicative prices need builder quotes; already-included features have no additional cost or benefit.")
+    body+="<h2>How total costs build over time</h2>"+para("Green: sustainable. Grey: conventional. Values are converted to today's equivalent.")+chart+"</section>"
+    body+="<section><h1>How reliable is the comparison?</h1><h2>Your key inputs</h2>"+table(["Input","Value / explanation"],v["inputs"])+para("End-of-period plan: "+p.get("terminal_basis","Review your assumptions."))+"<h2>Could the answer change?</h2>"+para(v["robustness"])
+    body+=table(["Study period","Conventional total","Sustainable total"],[[f"{n} years",money(val["conventional"]["total_lcc"]),money(val["sustainable"]["total_lcc"])] for n,val in result["periods"].items()])+"<h2>Before committing to the design</h2><ol>"+"".join("<li>"+text(t)+"</li>" for t in v["next_steps"])+"</ol>"
+    if p["building_type"]=="Apartment Building": body+=para("Whole-building budgets must cover relevant lifts, car parks, central plant, fire systems and common services. The generic model does not automatically price these systems. Occupancy is an estimate, not a legal capacity.")
+    if result.get("budget_scenarios"):
+        body+="<h2>Your construction budget range</h2>"+table(["Budget case","Conventional total","Sustainable total"],[[label.title(),money(val[str(years)]["conventional"]),money(val[str(years)]["sustainable"])] for label,val in result["budget_scenarios"].items()])
+    body+="</section><section><h1>Evidence and report notes</h1><h2>Utility and cost references</h2>"
+    for s in result.get("sources",[]): body+="<h3>"+text(s["organisation"]+" - "+s["title"])+"</h3>"+para(s["url"])+para(f"Reference: {s.get('effective_from')} to {s.get('effective_to') or 'not specified'}. Checked: {s.get('retrieved_at')}.")
+    body+="<h2>Supporting research</h2>"
+    for i,e in enumerate(result.get("evidence",[])[:8],1): body+=para(f"[S{i}] {e['source']} - "+(f"page {e['page']}" if e.get("page") else "web context"))+(para(e["url"]) if e.get("url") else "")
+    body+="<h2>What this report can and cannot tell you</h2>"+para("This financial comparison does not certify BASIX, NatHERS, structural design or building compliance. Indicative quantities, demonstration values and research assumptions require applicable quotes, bills and plans. Environmental and comfort benefits are not fully measured by this financial model.")+para("For a complete input record, save your project JSON. Download the cash-flow CSV for each year's costs.")+"</section>"
+    return '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>GreenCost decision report</title><style>body{font:15px/1.65 Arial,sans-serif;color:#26382f;max-width:900px;margin:35px auto;padding:0 24px}h1{font-size:32px;color:#194b3a}h2{font-size:21px;color:#194b3a;margin-top:26px}.brand{font-weight:bold;letter-spacing:3px}.notice{background:#f5f2e8;padding:12px}.verdict{font-size:23px;font-weight:bold;color:#194b3a}table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:10px;border-bottom:1px solid #dce5df;text-align:left;overflow-wrap:anywhere}th{background:#edf4ef}svg{width:100%}p{overflow-wrap:anywhere}section{padding-bottom:24px}@media print{body{margin:0;font-size:11px}section{break-before:page}section:first-child{break-before:auto}tr,svg{break-inside:avoid}h1,h2,h3{break-after:avoid}thead{display:table-header-group}@page{size:A4;margin:16mm}}</style></head><body>'+body+'</body></html>'

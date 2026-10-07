@@ -1,4 +1,5 @@
 from datetime import date
+import math
 from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -50,6 +51,13 @@ class InstalledQuote(StrictModel):
 
 
 class Project(StrictModel):
+    area_basis: Literal["total", "per_floor"] = "total"
+    entered_area: float | None = Field(default=None, gt=0, le=1e7)
+    apartment_average_unit_m2: float = Field(default=75, ge=20, le=500)
+    apartment_residential_share: float = Field(default=.8, ge=.1, le=1)
+    occupant_mode: Literal["estimate", "manual"] = "manual"
+    end_of_life_mode: Literal["retained", "estimate", "manual"] = "manual"
+    terminal_basis: str = Field(default="User-entered terminal assumptions", max_length=1500)
     installed_quotes: dict[str, InstalledQuote] = Field(default_factory=dict, max_length=11)
     budget_range: list[Money] | None = Field(default=None, min_length=2, max_length=2)
     cost_plan_note: str = Field(default="", max_length=1500)
@@ -74,7 +82,7 @@ class Project(StrictModel):
     name: str = Field(default="Sydney project", min_length=1, max_length=120)
     postcode: str = Field(pattern=r"^2\d{3}$")
     zone: Literal["Ausgrid", "Endeavour Energy", "Essential Energy"]
-    building_type: Literal["Residential House", "Apartment", "Commercial / Other"] = "Residential House"
+    building_type: Literal["Residential House", "Apartment", "Apartment Building", "Commercial / Other"] = "Residential House"
     area: float = Field(gt=0, le=1e7)
     area_unit: Literal["m²", "ft²"] = "m²"
     floors: int = Field(ge=1, le=100)
@@ -132,6 +140,41 @@ class Project(StrictModel):
 
     @model_validator(mode="after")
     def coherent(self):
+        if self.building_type == "Apartment Building":
+            if self.area_basis == "per_floor" and self.entered_area is None:
+                raise ValueError("Enter the average floor area for the apartment building.")
+            if self.entered_area is not None:
+                total = self.entered_area * (self.floors if self.area_basis == "per_floor" else 1)
+                if not math.isclose(self.area, total, rel_tol=1e-9, abs_tol=1e-6):
+                    raise ValueError("Whole-building area must match the entered area and floor count. Refresh your size inputs.")
+            if self.occupant_mode == "estimate":
+                from backend.app.services.occupancy import apartment_occupancy
+                count = apartment_occupancy(self.area * (.092903 if self.area_unit == "ft²" else 1),
+                                           self.apartment_average_unit_m2, self.apartment_residential_share)["occupants"]
+                if count > 100000:
+                    raise ValueError("Estimated occupants exceed the supported range; review area and occupancy assumptions.")
+                self.occupants = count
+            if self.tariff_mode != "user":
+                raise ValueError("Apartment buildings require applicable whole-building utility rates and aggregate fixed charges from bills or contracts.")
+        elif self.area_basis != "total" or self.entered_area is not None:
+            raise ValueError("Per-floor area entry is supported for whole apartment buildings only.")
+        if self.end_of_life_mode == "retained" and any((self.disposal_conventional, self.disposal_sustainable, self.residual_conventional, self.residual_sustainable)):
+            raise ValueError("A retained building has no removal or recovered-material cash flow.")
+        if self.mode == "itemised" and self.building_type == "Apartment" and any(m in self.selected_measures for m in ("solar_pv", "rainwater", "airtightness_shading")):
+            raise ValueError("Apartment-unit comparisons exclude shared solar, rainwater and external-envelope systems. Compare an approved allocated project separately.")
+        if self.end_of_life_mode == "estimate":
+            area = self.area * (0.092903 if self.area_unit == "ft²" else 1)
+            band = ((32000, 55000) if self.floors == 2 and 200 <= area <= 350 else
+                    (15000, 22000) if self.floors == 1 and 0 < area < 150 else
+                    (20000, 32000) if self.floors == 1 and 150 <= area <= 250 else
+                    (28000, 42000) if self.floors == 1 and 250 < area <= 350 else None)
+            if self.building_type != "Residential House" or band is None:
+                raise ValueError("No supported removal-guide range for this building scope; enter a quote.")
+            midpoint = sum(band) / 2
+            if (abs(self.disposal_conventional - midpoint) > .01 or
+                    abs(self.disposal_sustainable - midpoint) > .01 or
+                    self.residual_conventional or self.residual_sustainable):
+                raise ValueError("Removal estimate no longer matches the building scope; refresh it or use manual costs.")
         if self.budget_range:
             low, high = self.budget_range
             if low <= 0 or high < low or self.cost_mode != "quick" or self.historical_index:
