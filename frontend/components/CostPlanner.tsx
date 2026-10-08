@@ -1,4 +1,5 @@
 'use client';
+import {DrawCheckbox} from './ui/draw-checkbox';
 import {useEffect,useRef,useState} from 'react';
 import {ArrowUpRight,RefreshCw,Plus,Trash2} from 'lucide-react';
 import NumberInput from './NumberInput';
@@ -74,6 +75,6 @@ export default function CostPlanner({project:p,onChange}:{project:Project;onChan
  {p.cost_plan_note&&<p className="small-note">{p.cost_plan_note}</p>}
  {mode!=='detailed'&&<><p className="small-note">Your entered budget remains the calculation baseline until you choose to use this edited breakdown.</p><button className="text-link" type="button" onClick={()=>{setMode('detailed');onChange({...p,cost_mode:'detailed',budget_range:null,historical_index:null,detailed_complete:true});}}>Use edited breakdown as construction total</button></>}
  </details>}
- {mode==='detailed'&&<><button type="button" className="text-link" onClick={()=>onChange({...p,materials:[...p.materials,{name:'New item',quantity:1,unit:'allowance',unit_cost:0,service_life:null,replacement_interval:null,maintenance:0}],budget_range:null})}><Plus size={14}/> Add cost item</button><Field fieldKey="detailed_complete" label="I included materials, labour, fees and the full construction scope." required><input type="checkbox" checked={p.detailed_complete} onChange={e=>onChange({...p,detailed_complete:e.target.checked})}/></Field></>}
+ {mode==='detailed'&&<><button type="button" className="text-link" onClick={()=>onChange({...p,materials:[...p.materials,{name:'New item',quantity:1,unit:'allowance',unit_cost:0,service_life:null,replacement_interval:null,maintenance:0}],budget_range:null})}><Plus size={14}/> Add cost item</button><Field fieldKey="detailed_complete" label="I included materials, labour, fees and the full construction scope." required><DrawCheckbox checked={p.detailed_complete} onChange={e=>onChange({...p,detailed_complete:e.target.checked})}/></Field></>}
  </section>;
 }

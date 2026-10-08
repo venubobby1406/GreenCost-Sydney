@@ -2,6 +2,8 @@
 import {Children,cloneElement,createContext,isValidElement,useContext,useId,useState,type ReactElement,type ReactNode} from 'react';
 import {Info} from 'lucide-react';
 import NumberInput from './NumberInput';
+import Select from './ui/select';
+import {DrawCheckbox} from './ui/draw-checkbox';
 
 export const ValidationContext=createContext<{errors:Record<string,string>;clear:(key:string)=>void}>({errors:{},clear:()=>{}});
 
@@ -13,7 +15,7 @@ export default function FormField({label,hint,help,required=false,fieldKey,child
  function wire(nodes:ReactNode):ReactNode{return Children.map(nodes,node=>{
   if(!isValidElement(node))return node;
   const element=node as ReactElement<Record<string,unknown>>;
-  if(!wired&&(element.type===NumberInput||['input','select','textarea'].includes(String(element.type)))){
+  if(!wired&&([NumberInput,Select,DrawCheckbox].includes(element.type as typeof NumberInput)||['input','select','textarea'].includes(String(element.type)))){
    wired=true;const oldChange=element.props.onChange as ((event:unknown)=>void)|undefined,oldValue=element.props.onValueChange as ((value:number|null)=>void)|undefined;
    return cloneElement(element,{id,name:key,'data-field-key':key,'data-field-label':label,'aria-label':label,'aria-invalid':!!error,'aria-describedby':[hint?id+'-hint':'',help?id+'-help':'',error?id+'-error':''].filter(Boolean).join(' ')||undefined,required,
     ...(oldChange?{onChange:(event:unknown)=>{clear(key);oldChange(event);}}:{}),...(oldValue?{onValueChange:(value:number|null)=>{clear(key);oldValue(value);}}:{})});
@@ -24,7 +26,7 @@ export default function FormField({label,hint,help,required=false,fieldKey,child
 }
 
 export function focusField(key:string){
- const element=[...document.querySelectorAll<HTMLElement>('[data-field-key]')].find(e=>e.dataset.fieldKey===key);
+ const element=[...document.querySelectorAll<HTMLElement>('[data-field-key]')].find(e=>e.dataset.fieldKey===key&&!e.classList.contains('ui-select-native'));
  if(!element)return;
  let parent=element.parentElement;while(parent){if(parent instanceof HTMLDetailsElement)parent.open=true;parent=parent.parentElement;}
  element.focus();element.scrollIntoView({block:'center',behavior:'auto'});

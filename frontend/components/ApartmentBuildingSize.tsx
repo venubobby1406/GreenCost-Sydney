@@ -1,4 +1,5 @@
 'use client';
+import Select from './ui/select';
 import type {Project} from '@/lib/types';
 import {apartmentOccupancy,apartmentOccupancySource} from '@/lib/client-planning';
 import Field from './FormField';
@@ -16,7 +17,7 @@ export default function ApartmentBuildingSize({project:p,onChange}:{project:Proj
   <div className="choice-row" role="group" aria-label="Apartment area entry">{(['per_floor','total'] as const).map(value=><button type="button" key={value} aria-pressed={basis===value} className={basis===value?'selected':''} onClick={()=>onChange({area_basis:value,entered_area:p.area>0?(value==='per_floor'&&p.floors>0?p.area/p.floors:p.area):null})}>{value==='per_floor'?'Area per floor':'Total building area (recommended)'}</button>)}</div>
   <div className="field-grid">
    <Field fieldKey="area" required label={basis==='per_floor'?'Average floor area':'Total building floor area'} hint={basis==='per_floor'?'Enter the average area of one residential floor. We multiply it by the number of floors once.':'Enter the combined area of all residential floors, including shared corridors. We do not multiply this total again.'} help="Use consistent drawings or measured area. The estimate separates assumed residential apartment space from common/service areas.">
-    <div className="area-control"><NumberInput min={1} value={entered} onValueChange={value=>onChange({entered_area:value})}/><select aria-label="Floor area unit" value={p.area_unit} onChange={e=>onChange({area_unit:e.target.value})}><option>m²</option><option>ft²</option></select></div>
+    <div className="area-control"><NumberInput min={1} value={entered} onValueChange={value=>onChange({entered_area:value})}/><Select aria-label="Floor area unit" value={p.area_unit} onChange={e=>onChange({area_unit:e.target.value})}><option>m²</option><option>ft²</option></Select></div>
    </Field>
    <Field fieldKey="floors" required label="Number of floors" hint="Count residential storeys across the building, for example 20 or 50." help="Required for the building geometry. With per-floor entry, it also determines the total area used for the occupancy estimate."><NumberInput min={1} max={100} step={1} value={p.floors} onValueChange={value=>onChange({floors:value as number})}/></Field>
   </div>

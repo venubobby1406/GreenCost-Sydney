@@ -13,9 +13,8 @@ class Boundary extends Component<{children:ReactNode},{failed:boolean}>{state={f
 function Box({position,size,color,glass=false}:{position:[number,number,number];size:[number,number,number];color:string;glass?:boolean}){return <mesh position={position} castShadow={!glass} receiveShadow><boxGeometry args={size}/><meshStandardMaterial color={color} roughness={glass?.18:.78} metalness={glass?.3:0}/></mesh>;}
 function Tree({x,z}:{x:number;z:number}){return <group position={[x,0,z]}><mesh position={[0,.7,0]} castShadow><cylinderGeometry args={[.055,.08,1.4,8]}/><meshStandardMaterial color="#806954"/></mesh>{[[0,1.7,0,.65],[.3,1.9,.1,.5],[-.25,2,.1,.5],[0,2.35,0,.43]].map(([a,b,c,r],i)=><mesh key={i} position={[a,b,c]} castShadow><icosahedronGeometry args={[r,1]}/><meshStandardMaterial color={i%2?'#68845b':'#8ea17b'} flatShading/></mesh>)}</group>;}
 function Home({floors,solar,reduced,night}:{floors:number;solar:boolean;reduced:boolean;night:boolean}){
- const scene=useRef<THREE.Group>(null),flow=useRef<THREE.Group>(null);const height=Math.min(4,Math.max(1,Math.round(floors)));
- useEffect(()=>{if(flow.current)flow.current.position.y=height*1.35+.3;},[height,solar]);
- useFrame(({clock})=>{if(reduced)return;if(scene.current)scene.current.rotation.y=Math.sin(clock.elapsedTime*.14)*.06;if(flow.current){flow.current.rotation.y=clock.elapsedTime*.2;flow.current.position.y=height*1.35+.3+Math.sin(clock.elapsedTime*.9)*.08;}});
+ const scene=useRef<THREE.Group>(null);const height=Math.min(4,Math.max(1,Math.round(floors)));
+ useFrame(({clock})=>{if(reduced)return;if(scene.current)scene.current.rotation.y=Math.sin(clock.elapsedTime*.14)*.06;});
  return <group ref={scene}>
   <Box position={[0,-.25,1.3]} size={[7.9,.4,9.9]} color="#acbc9c"/><Box position={[0,-.02,1.3]} size={[7.7,.12,9.7]} color="#d1ddbf"/>
   <RoadTraffic reduced={reduced} night={night}/>
@@ -33,7 +32,7 @@ function Home({floors,solar,reduced,night}:{floors:number;solar:boolean;reduced:
   {solar&&[-1.35,0,1.35].map(x=><group key={x} position={[x,height*1.35+.24,-.5]} rotation={[-.15,0,0]}><Box position={[0,0,0]} size={[1.12,.08,1.9]} color="#183c4d"/>{[-.37,0,.37].map(v=><Box key={v} position={[v,.047,0]} size={[.013,.01,1.85]} color="#7aa1a9"/>)}{[-.6,0,.6].map(v=><Box key={v} position={[0,.047,v]} size={[1.1,.01,.013]} color="#7aa1a9"/>)}</group>)}
   <Box position={[-.25,.06,2.8]} size={[1.5,.06,.3]} color="#c0b397"/><Box position={[-.25,.06,2.35]} size={[1.5,.06,.3]} color="#c0b397"/>
   <Tree x={-3.05} z={-.6}/><Tree x={3.1} z={1.8}/><Tree x={-2.9} z={2.2}/>
-  {solar&&<><mesh position={[2.9,.7,-2]} castShadow><cylinderGeometry args={[.42,.42,1.4,24]}/><meshStandardMaterial color="#859989"/></mesh><group ref={flow}><mesh position={[0,0,0]} rotation={[-Math.PI/2,0,0]}><torusGeometry args={[3.4,.014,6,64]}/><meshBasicMaterial color="#b19b62" transparent opacity={.5}/></mesh><mesh position={[3.4,0,0]}><sphereGeometry args={[.08,12,12]}/><meshBasicMaterial color="#d2b771"/></mesh></group></>}
+  {solar&&<mesh position={[2.9,.7,-2]} castShadow><cylinderGeometry args={[.42,.42,1.4,24]}/><meshStandardMaterial color="#859989"/></mesh>}
  </group>;
 }
 function CameraRig({floors,reduced}:{floors:number;reduced:boolean}){
