@@ -8,6 +8,14 @@ The **Home** page introduces GreenCost and its interactive building. **Compare**
 
 For a complete nontechnical walkthrough, technology explanation and five-minute presentation script, read the [Client Presentation and Execution Guide](docs/GreenCost-Client-Guide.md).
 
+## Appearance and charts
+
+The interface follows [TensorTonic](https://www.tensortonic.com/)'s warm neutral light palette, near-black dark palette, green accents and Satoshi headings. The sun/moon button in the header switches themes across Home, Compare and Method & evidence. The first visit follows your device preference; a manual selection is saved under `greencost-theme` in this browser. It does not alter or reset a project draft. With browser storage unavailable, the toggle still works for the current page.
+
+Cost charts use green for the sustainable design and a dashed orange line for the conventional design. Axes, legends and tooltips change with the theme. Axis amounts use compact labels such as `$750K`; tooltips and tables retain full amounts. The Overview opens with charts visible, and the study-period selector continues to compare 30, 40 and 50 years. Styling does not change the calculation model or exported PDF layout.
+
+Satoshi is delivered by the official Fontshare CDN, with the bundled Inter font as its fallback. No font API key is required. The font license and visual-source attribution are recorded in `frontend/THIRD_PARTY_NOTICES.md`. The Three.js scene retains its own illustrative day/night cycle, independently of the website theme.
+
 ## Run it on Windows
 
 Install [Python 3.12+](https://www.python.org/downloads/) and [Node.js 22 LTS or newer](https://nodejs.org/). Open PowerShell in this project folder, then run:
@@ -98,6 +106,109 @@ Local caps count requests, not credits, and are persisted as JSON. **Serverless 
 Official references: [Gemini pricing](https://ai.google.dev/gemini-api/docs/pricing), [Tavily pricing](https://help.tavily.com/articles/8816424538-pricing), [Vercel Hobby rules](https://vercel.com/docs/plans/hobby).
 
 ## Deploy on Vercel
+
+### Where environment variables belong
+
+| Environment | Backend configuration | Frontend configuration |
+| --- | --- | --- |
+| Local VS Code | Project-root `.env`, loaded by FastAPI. | Normally none: the proxy defaults to `http://127.0.0.1:8000`. For an override, use `frontend/.env.local`. |
+| Live Vercel | Backend project → Settings → Environment Variables. | Frontend project → Settings → Environment Variables. |
+
+Vercel does not automatically copy your local `.env` to the deployment. Add variables to the correct project and select **Production** for the live site. Use **Preview** settings separately if you want preview deployments to work. Changes need a new deployment; see [Vercel environment variable guidance](https://vercel.com/docs/environment-variables/managing-environment-variables).
+
+### Backend: required live settings
+
+Start with these values in the **backend Vercel project**. Replace the example frontend domain with your actual frontend URL:
+
+```dotenv
+ALLOWED_ORIGINS=https://YOUR-FRONTEND.vercel.app
+SAVE_LOCAL_ANALYSES=false
+ENABLE_HOSTED_AI=false
+REQUESTS_PER_MINUTE=120
+```
+
+| Variable | Purpose / value |
+| --- | --- |
+| `ALLOWED_ORIGINS` | Exact permitted frontend origins, including `https://`. Separate multiple origins with commas, without paths. Add your custom domain and explicit preview origins if used. Do not use `*`. |
+| `SAVE_LOCAL_ANALYSES` | `false` for Vercel. Local JSON analysis files are not durable hosted project storage. Locally, the default is `true`. |
+| `ENABLE_HOSTED_AI` | `false` for offline launch testing. On Vercel, `true` permits both explanation providers **and Tavily** when keys and caps are configured. This switch does not disable local research requests outside Vercel. |
+| `REQUESTS_PER_MINUTE` | Positive integer; default `120`. Limits POST requests per client as seen by one backend instance. It is not a global distributed rate limit. |
+
+The calculator, local evidence and report exports can work with hosted AI disabled. No database URL or login secret is required by the current application.
+
+### Backend: optional provider settings
+
+Add only the provider keys you intend to use. These are **backend-only secrets**. The following values are placeholders, not real keys:
+
+```dotenv
+OPENROUTER_API_KEY=replace-with-your-openrouter-key
+OPENROUTER_MODEL=openrouter/free
+OPENROUTER_DAILY_CAP=20
+OPENROUTER_MONTHLY_CAP=400
+
+GROQ_API_KEY=replace-with-your-groq-key
+GROQ_MODEL=openai/gpt-oss-20b
+GROQ_DAILY_CAP=20
+GROQ_MONTHLY_CAP=400
+
+GEMINI_API_KEY=replace-with-your-gemini-key
+GEMINI_MODEL=gemini-2.5-flash
+GEMINI_DAILY_CAP=20
+GEMINI_MONTHLY_CAP=400
+
+TAVILY_API_KEY=replace-with-your-tavily-key
+TAVILY_DAILY_CAP=10
+TAVILY_MONTHLY_CAP=200
+```
+
+| Provider | What it does | When it is used |
+| --- | --- | --- |
+| OpenRouter | Qualitative explanations. | First choice; free router or model ID ending in `:free`. |
+| Groq | Qualitative explanations. | Second choice if OpenRouter is unavailable or its reply is unusable. |
+| Gemini | Qualitative explanations. | Last provider fallback. |
+| Tavily | Web research and supplier-price searches. | Separate from the explanation fallback chain. |
+
+Choose model IDs accessible to your account. Leave unconfigured keys absent or blank. A successful earlier explanation stops the chain. If none succeeds, Python results still appear with a calculated explanation.
+
+Caps are integer request counts, not money or credits; a cap of `0` prevents that provider's requests. Hosted counters are per instance and can reset, so they cannot guarantee account-wide quotas. Configure provider account limits and host abuse protection before changing **`ENABLE_HOSTED_AI=true`**, then redeploy the backend. Do not make live provider calls just to check that a key is present; Research connections reports configuration separately from request outcomes.
+
+### Frontend: live settings
+
+Add this to the **frontend Vercel project**, before its build:
+
+```dotenv
+GREENCOST_API_URL=https://YOUR-BACKEND.vercel.app
+NEXT_TELEMETRY_DISABLED=1
+```
+
+| Variable | Required? | Purpose |
+| --- | --- | --- |
+| `GREENCOST_API_URL` | Yes for deployment. | Backend base URL, including `https://`, without `/api` or a trailing slash. Used server-side for the API proxy and streaming route. If missing, it defaults to localhost, which will not reach your deployed backend. |
+| `NEXT_TELEMETRY_DISABLED` | Optional. | `1` disables Next.js telemetry. It is not an application credential. |
+
+**Do not add OpenRouter, Groq, Gemini or Tavily keys to the frontend. No `NEXT_PUBLIC_` variables are needed.** The browser calls the frontend's `/api` paths; the server forwards them to the backend.
+
+For a local proxy override only, `frontend/.env.local` can contain:
+
+```dotenv
+GREENCOST_API_URL=http://127.0.0.1:8000
+NEXT_TELEMETRY_DISABLED=1
+```
+
+Restart development after editing it, or rebuild/restart production. Putting this override only in the project-root `.env` does not configure Next.js when it runs from `frontend`.
+
+### Deployment order and checks
+
+1. Deploy the backend with `ENABLE_HOSTED_AI=false` and the intended frontend origin. If its URL is not known yet, update the origin after creating the frontend.
+2. Copy the backend base URL into the frontend's `GREENCOST_API_URL`, then deploy the frontend.
+3. Set backend `ALLOWED_ORIGINS` to the actual frontend origin and redeploy the backend. Include the custom domain if applicable.
+4. Open `https://YOUR-BACKEND.vercel.app/api/health`: check `status: ok`, `rag_ready: true` and provider configuration flags. Flags confirm configuration, not working credentials.
+5. Open `https://YOUR-FRONTEND.vercel.app/api/health` to check the proxy. Test a sample calculation, PDF export, draft restoration and project import with hosted AI still disabled.
+6. When ready for optional online research, add backend keys, account controls and caps, set `ENABLE_HOSTED_AI=true`, and redeploy the backend.
+
+Keep `.env` and `.env.local` files out of Git; `.env.example` contains safe placeholders. Do not manually set Vercel's platform-provided `VERCEL` variable. `LANGSMITH_TRACING=false` in the local example is not required by the current execution path, and no LangSmith key is needed.
+
+### Vercel project configuration
 
 Vercel Hobby is for personal, non-commercial use and is subject to limits. It can suit an academic demo. Commercial use requires a suitable paid plan. The project is configured for **two Vercel projects from the same repository**; no database service is involved.
 

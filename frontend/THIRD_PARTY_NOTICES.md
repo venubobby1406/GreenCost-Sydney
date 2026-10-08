@@ -23,3 +23,9 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## Satoshi typography
+
+Satoshi is designed by Indian Type Foundry and delivered through the official Fontshare CDN under its ITF Free Font License. The project does not redistribute the font binaries. The original license is preserved at `public/fonts/satoshi-FFL.txt`. A locally bundled Inter fallback keeps the interface usable when the CDN is unavailable.
+
+Visual styling is inspired by [TensorTonic](https://www.tensortonic.com/). GreenCost retains its own branding, content, building scene and calculator; no TensorTonic source code or artwork is distributed.
