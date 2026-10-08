@@ -1,6 +1,6 @@
 # GreenCost
 
-Compare the whole-life cost of a conventional and upgraded building over **30, 40 and 50 years**. GreenCost uses Python for all financial calculations and Three.js for the animated building. Gemini and Tavily are optional.
+Compare the whole-life cost of conventional and sustainable building designs over **30, 40 and 50 years**. GreenCost uses Python for all financial calculations, Three.js for the interactive building, and optional **OpenRouter → Groq → Gemini** explanations. Tavily supplies optional research context and supplier searches. AI does not set prices or calculate savings.
 
 **No SQL, NoSQL, vector database, database account, or database installation is required.** Research is kept in ordinary files. Recent comparisons stay in your browser. Local installations can also save JSON reports.
 
@@ -23,6 +23,8 @@ For the optimised production build:
 ```powershell
 .\scripts\start-local.ps1 -Production
 ```
+
+**After changing code while running production:** press **Ctrl+C** in the startup terminal, run the production command again to rebuild, then refresh the browser. Development and production share `.next`; stop the frontend before building. Do not run two instances on ports 3000/8000.
 
 The same script accepts `-SetupOnly` to install without starting, or `-Python 'C:\path\to\python.exe'` if Python is not on your PATH. If PowerShell blocks scripts, run `powershell -ExecutionPolicy Bypass -File .\scripts\start-local.ps1` for this invocation.
 
@@ -63,23 +65,33 @@ Downloads and successful actions use a temporary notice at the top right. Calcul
 
 Share links and downloaded files contain project details. Do not put private information in the project name or share a link publicly unless you intend to disclose its inputs. With browser storage disabled or full, calculations and downloads still work.
 
-## Use free Gemini and Tavily keys
+## Optional AI explanations and live research
 
 The setup script creates `.env` only if it does not already exist. Add keys to that file, not frontend files:
 
 ```dotenv
+OPENROUTER_API_KEY=your-key
+OPENROUTER_MODEL=openrouter/free
+GROQ_API_KEY=your-key
+GROQ_MODEL=openai/gpt-oss-20b
 GEMINI_API_KEY=your-key
-GEMINI_MODEL=gemini-3.5-flash-lite
+GEMINI_MODEL=gemini-2.5-flash
 TAVILY_API_KEY=your-key
 TAVILY_DAILY_CAP=10
 TAVILY_MONTHLY_CAP=200
+OPENROUTER_DAILY_CAP=20
+OPENROUTER_MONTHLY_CAP=400
+GROQ_DAILY_CAP=20
+GROQ_MONTHLY_CAP=400
 GEMINI_DAILY_CAP=20
 GEMINI_MONTHLY_CAP=400
 ```
 
-Restart after editing. Choose a model available in your Gemini account. Free services have quotas; timeouts, quota errors and unavailable models fall back to calculated explanations. A normal online comparison makes at most one context search and one explanation call. Supplier pricing is separate: a full breakdown refresh makes up to five search requests, and an individual refresh makes at most one. Successful price checks are reused for up to a day; rapid repeated attempts have a cooldown. Follow-up qualitative questions may make an additional explanation call. Financial what-ifs and exports make no external calls.
+Restart after editing. Choose models available in your provider accounts; availability and quotas can change. Explanation order is **OpenRouter → Groq → Gemini → calculated explanation**. Missing keys are skipped. A usable reply stops the chain, so later providers receive no request. Failed or rejected replies allow the next provider, with one bounded attempt per provider. OpenRouter configuration accepts `openrouter/free` or a model ID ending in `:free`; this does not guarantee account availability.
 
-Gemini sees non-identifying scenario facts and selected research excerpts. Tavily receives a general building-feature search. Neither provider controls arithmetic or official tariff values. Administrators should exclude confidential research from the bundled library when optional AI is enabled.
+A normal online comparison makes at most one context search and can attempt up to three explanation providers when earlier attempts fail. Supplier pricing is separate: a full breakdown refresh makes up to five search requests, and an individual refresh makes at most one. Successful price checks are reused for up to a day; rapid repeated attempts have a cooldown. Follow-up qualitative questions and explicit research retries can use additional requests. Financial what-ifs and exports make no external calls.
+
+Explanation providers receive scenario context and selected research excerpts. Tavily receives research and supplier queries. These providers do not control arithmetic or official tariff values. Administrators should exclude confidential research from the bundled library when optional AI is enabled. Keep keys in backend configuration and out of Git.
 
 Local caps count requests, not credits, and are persisted as JSON. **Serverless instances cannot share a global counter without shared storage.** Hosted AI is therefore off by default. Keep account-level quotas in place before enabling it.
 
@@ -105,7 +117,7 @@ Vercel Hobby is for personal, non-commercial use and is subject to limits. It ca
 - Deploy. Add the resulting frontend URL to the backend's `ALLOWED_ORIGINS`, then redeploy the backend.
 - Run the sample comparison and test PDF export, a share link and the methodology page.
 
-To use optional free APIs on Vercel, add the two keys and `GEMINI_MODEL` to the **backend project only**. Set `ENABLE_HOSTED_AI=true` only after configuring provider quotas and host abuse protection. Per-instance rate limits and counters are not a distributed spending guarantee. Preview frontend domains must also be explicitly allowed.
+To use optional APIs on Vercel, add the configured provider keys, model settings and request caps to the **backend project only**. Set `ENABLE_HOSTED_AI=true` only after configuring provider quotas and host abuse protection. Per-instance rate limits and counters are not a distributed spending guarantee. Preview frontend domains must also be explicitly allowed.
 
 Vercel has no durable local filesystem. PDF uploads have been removed from the public UI and API. Administrators can maintain the included research files locally, run `scripts/ingest_knowledge.py`, and redeploy. Results are retained in the browser or exported files. Server-side report/chat routes rebuild validated inputs with captured rates, rather than relying on a saved server ID. No hosted deployment has been performed or verified against your account.
 
@@ -144,7 +156,15 @@ npm run build
 npm audit
 ```
 
-Stop the frontend before rebuilding; development and production share `.next`. GitHub Actions runs backend and frontend checks on pushes and pull requests. Automated provider tests use mocked contracts. The 6 October verification records 81 passing backend tests and the production/browser checks. Live Tavily checks returned research context, while supplier prices can remain unresolved; Gemini has returned both provider-busy and unusable-text conditions, with calculated fallback explanations. See `docs/PRODUCTION_VERIFICATION.md` for the evidence and limits.
+Additional regression checks, run from the project root:
+
+```powershell
+node scripts/check-apartment.cjs
+node scripts/check-preview-retry.cjs
+node scripts/check-report-export.cjs
+```
+
+Stop the frontend before rebuilding; development and production share `.next`. GitHub Actions runs backend tests/lint and frontend lint, type checks, build and dependency audit on pushes and pull requests. A yellow **pending** commit indicator means checks are queued or running; open **Actions** to inspect the outcome. Automated provider tests use mocked contracts. Historical verification documents describe their recorded versions, not the current health of every provider. See [production verification](docs/PRODUCTION_VERIFICATION.md) and [UI verification notes](docs/UI-COMPONENT-REFRESH.md) for evidence and limits.
 
 ## Project structure
 
@@ -155,6 +175,7 @@ backend/app/services/       analysis, JSON files, PDF/HTML reports, API budgets
 backend/app/rag/            local PDF passage retrieval (not a database)
 frontend/app/               comparison and method/evidence pages
 frontend/components/        guided form, upgrade picker, Three.js and charts
+frontend/components/ui/     shared tabs, checkbox and keyboard-accessible select
 data/regions/sydney_nsw/    supplied region catalogue and indicative assumptions
 data/verified/             dated official tariff/index records
 data/knowledge/            all four supplied research PDFs and context
@@ -183,7 +204,7 @@ To add a region later, create a new `data/regions/<region>/` folder with reviewe
 
 **No supplier price:** many products have variant-dependent, pack-based or quote-only pricing. The app retains the labelled estimate and links to the supplier. Check the source and confirm installation, delivery and product suitability before using a price.
 
-**Gemini busy / quota reached:** the provider status identifies temporary demand, quota or model-access errors where available. Financial calculations still finish with built-in explanations.
+**AI busy / quota reached:** the provider status identifies temporary demand, quota or model-access errors where available. OpenRouter is attempted first, followed by Groq and Gemini if needed. Financial calculations still finish with built-in explanations when no provider returns usable text.
 
 **Blank number fields:** Backspace now clears values. Complete required inputs before continuing. A zero utility value requires confirmation and models no usage savings.
 
@@ -205,30 +226,49 @@ Use whole-building budgets and measured/design consumption for this scope. Enter
 
 **Sustainable design** groups features into comfort, clean energy, water and materials. Australian guidance is linked on each card. Heat-pump hot water is offered for a less efficient baseline; already-included features receive no extra benefit. Supply-price lookup remains in the budget breakdown. Installed upgrades still need comparable quotes; a supply price is not an installed quote.
 
-The eight-stage timeline shows actual start/completion events. Gemini and Tavily have separate request outcomes; a configured key alone is not a successful request. Rejected or unavailable Gemini responses use a calculated explanation and say so. Python financial results do not depend on an AI response.
+The eight-stage timeline shows actual start/completion events with a completed-stage progress bar. OpenRouter, Groq, Gemini and Tavily have separate request outcomes; a configured key alone is not a successful request. The first usable explanation ends the fallback chain. If all available providers fail, a calculated explanation is used. Python financial results do not depend on an AI response.
 
 Removal estimates are restricted to supported ordinary house scopes from a dated contractor guide. Both designs use the same allowance, recovered-material income defaults to zero, and manual quotes can override it. End-of-study demolition is optional, not automatic. The initial cost, maintenance present value and total present value are prominent in results and reports. See [client refresh notes](docs/Client-Refresh-Notes.md) for sources and scope.
 
-## Automatic AI fallback
-
-Set server-side keys in `.env` (never `NEXT_PUBLIC_` variables):
-
-```dotenv
-GROQ_API_KEY=your_key_here
-GROQ_MODEL=openai/gpt-oss-20b
-OPENROUTER_API_KEY=your_key_here
-OPENROUTER_MODEL=openrouter/free
-```
-
-Keep your existing `GEMINI_API_KEY` and `GEMINI_MODEL`. Restart the server after editing keys. Order: **OpenRouter → Groq → Gemini → calculated explanation**. Missing keys are skipped. A usable first or second reply stops the chain: later APIs receive no request. Quota, permission, connection, incomplete-text and content-check failures permit the next provider. Each provider has one attempt, bounded HTTP timeouts and its own daily/monthly application caps. These caps are not a shared serverless quota. OpenRouter is restricted to `openrouter/free` or a model ID ending in `:free`; account limits still apply. The free router may choose different available models. Optional AI receives the explanation context/evidence; Python remains responsible for every calculation. The interface identifies the successful provider and reports failures.
-
-
 ## Client decision report
 
-PDF and printable HTML reports start with initial building cost, routine maintenance and total cost, then explain savings, investment recovery, selected upgrades, important assumptions and next steps in everyday language. Technical inputs stay available in the project JSON and annual cash-flow CSV instead of being printed as raw records. Maintenance is included in the total, not added to it again.
+The PDF uses a **five-page report structure**. PDF and printable HTML reports include the project name, start with initial building cost, routine maintenance and total cost, then explain savings, investment recovery, selected upgrades, important assumptions and next steps in everyday language. Interactive cost charts are available in the dashboard. Technical inputs stay available in the project JSON and annual cash-flow CSV instead of being printed as raw records. Maintenance is included in the total, not added to it again.
 
 Downloads contain project-specific paragraphs built from validated inputs, selected upgrades and calculated results. Provider/request diagnostics and metadata replies are kept out of client reports. Reports use the project name in the download filename, with a GreenCost fallback when no name is entered. Exporting makes no new AI request and never accepts browser-supplied financial totals.
 
-The landing-page Three.js preview includes an illustrative 36-second day/night cycle. The sun and moon appear in separate phases, with changing scene light and sky colour. Its pause control freezes the animation; reduced-motion settings and offscreen visibility limit animation. This is a decorative preview, not a local sunrise forecast.
-Traffic disappears at night and returns in daylight, resuming its motion without a jump. The moon advances through eight illustrative phases across successive nights, and soft clouds drift slowly with day/night colours. This accelerated cycle does not follow the real lunar calendar.
+## Interface and interactive building
+
+The component refresh keeps the green visual identity and introduces:
+
+- Animated upgrade-category and dashboard tabs, with keyboard navigation.
+- Styled selection menus supporting arrows, Home, End, Escape and typeahead.
+- Animated checkboxes with native input semantics, inline validation and accessible help.
+- Expandable panels and dropdowns with larger, high-contrast circular chevrons.
+- Stacked material editors that stay inside the form; fields use one column on mobile.
+- Clear selected-upgrade cards and dashboard totals, initial construction cost and maintenance.
+- Responsive navigation, saved-project access and a progress bar driven by completed analysis stages.
+
+The component choices were reviewed against EasyUI. Animated tabs and checkboxes adapt MIT-licensed source; attribution is in [THIRD_PARTY_NOTICES.md](frontend/THIRD_PARTY_NOTICES.md). Other patterns use existing project dependencies without adding a package. See [component refresh notes](docs/UI-COMPONENT-REFRESH.md).
+
+The landing-page Three.js preview has one to four distinct floors, optional solar panels, trees, a small road, a car and a cyclist on separate paths. Its illustrative **36-second day/night cycle** changes scene light, sky and control colours. The sun and moon appear in separate phases. Traffic disappears at night and returns in daylight, resuming its motion without a jump. The moon advances through eight illustrative phases across successive nights, and soft clouds drift with day/night colours. The decorative orbiting ring and dot above the solar panels have been removed.
+
+The pause control freezes animation; reduced-motion preferences and offscreen visibility limit it. This is a decorative preview, not a local sunrise forecast, solar assessment or real lunar calendar.
+
+## Technology and execution flow
+
+| Layer | Technology and purpose |
+| --- | --- |
+| Frontend | Next.js, React, TypeScript and CSS/Tailwind tooling for pages and forms. |
+| UI and motion | Shared local components, Framer Motion and Lucide icons. |
+| Interactive building | Three.js, React Three Fiber and Drei. |
+| Results charts | Recharts. |
+| Backend | Python, FastAPI and Pydantic input validation. |
+| Reports | ReportLab PDFs, printable HTML, CSV and JSON exports. |
+| Research | Local PDF passage retrieval and optional Tavily searches. |
+| Explanations | OpenRouter, Groq and Gemini with calculated fallback. |
+| Storage | Browser drafts/history and ordinary JSON files; no database service. |
+
+The browser sends project inputs through the Next.js API proxy to FastAPI. Python validates the scope, builds both designs, applies utility rates and calculates the horizons and sensitivity cases. Local evidence and optional online research support explanations. The frontend receives progress events and displays returned calculations and charts. Report routes rebuild validated inputs rather than accepting financial totals supplied by the browser.
+
+The UI refresh does not change backend formulas or provider order. Example projects demonstrate the workflow; sustainable designs are not guaranteed to cost less.
 
