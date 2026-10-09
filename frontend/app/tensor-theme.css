@@ -126,6 +126,10 @@ button:focus-visible,a:focus-visible,summary:focus-visible,.ui-checkbox input:fo
 .guide-steps svg,.guide-steps .guide-icon {color:var(--gc-accent);background:var(--gc-accent-soft);}.stage-timeline li {color:var(--gc-muted);}
 .stage-timeline li>span {background:var(--gc-surface);border-color:var(--gc-line);color:var(--gc-muted);}.stage-timeline .running {background:var(--gc-accent-soft);color:var(--gc-accent);}
 .stage-timeline .running>span {background:var(--gc-inset);border-color:var(--gc-accent);color:var(--gc-accent);}.stage-timeline .complete {color:var(--gc-accent);}
+.workflow-progress {background:var(--gc-surface);border-color:var(--gc-line);}
+.stage-progress-bar {background:var(--gc-line);}.stage-progress-bar>span {background:var(--gc-accent);}
+.provider-details>p {background:var(--gc-raised);border-color:var(--gc-line);color:var(--gc-text);font-size:12px;}
+.provider-details>p b {color:var(--gc-text);font-size:12px;}.provider-details>p span {font-size:12px;line-height:1.6;}
 .agent-status,.connection-status,.research-toggle,.rate-summary,.input-summary,.scope-note,.terminal-section,.terminal-totals,.terminal-review,.apartment-occupancy,.apartment-area-total,.comparison-review,.confidence-note,.explanation,.literature-grid article,.supplier-results,.material-editor,.research-result-note {
  background:var(--gc-inset);border-color:var(--gc-line);color:var(--gc-text);
 }
