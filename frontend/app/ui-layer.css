@@ -45,7 +45,22 @@
 .result-empty>p{margin:14px 0 0;max-width:62ch;font-size:14px;line-height:1.7;color:var(--gc-muted)}
 .result-empty .ui-empty-steps{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-start;margin-top:26px}
 .result-empty .ui-empty-buttons{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-start;margin-top:20px;align-items:center}
-/* ---------- Research list rows ----------
+/* ---------- Evidence toggles: one height for all three ----------
+   "View numerical evidence" wraps to two lines in some cards and one in
+   others, so the boxes mismatch. Pin every summary to two text lines plus
+   padding (lh scales with the rendered font); single-line text centers via
+   the existing align-items:center. */
+.method-page .source-card details>summary{min-height:calc(2lh + 20px)}
+/* ---------- Source cards: equal heights, links pinned to the bottom ---------- */
+.source-cards.source-cards{align-items:stretch}
+.source-cards>.source-card{min-width:0;display:flex;flex-direction:column}
+.source-cards>.source-card>details{margin-bottom:22px}
+.source-cards>.source-card>a{margin-top:auto}
+/* When any card is open, let each card size to its own content: otherwise the
+   open card's height inflates its collapsed siblings into hollow voids. When
+   all are collapsed, stretch keeps them uniform with aligned links. */
+.source-cards:has(.source-card details[open]){align-items:start}
+/* ---------- Research list rows: pin the kind label ----------
    The kind label used float:right, but these summaries are flex rows, where
    floats are ignored — so each label landed wherever its title ended (zigzag).
    margin-left:auto pins every label to the same right edge instead. */
@@ -73,6 +88,53 @@
 @media(max-width:760px){
   .result-empty{padding:40px 6% 44px}
   .agent-card .guide-steps{display:flex;flex-direction:column}
+}
+/* ---------- Light mode: one white surface for neutral panels ----------
+   Neutral tinted boxes read as mismatched greys next to white cards.
+   Scoped to light only via :root:not(); dark mode, semantic amber/red,
+   selected states, heatmap data, control tracks and section bands stay. */
+:root:not([data-theme="dark"]) .formula,
+:root:not([data-theme="dark"]) .method-page .cost-formula,
+:root:not([data-theme="dark"]) .rate-summary,
+:root:not([data-theme="dark"]) .input-summary,
+:root:not([data-theme="dark"]) .budget-result,
+:root:not([data-theme="dark"]) .supplier-results,
+:root:not([data-theme="dark"]) .chat-answer,
+:root:not([data-theme="dark"]) .confidence-note,
+:root:not([data-theme="dark"]) .research-result-note,
+:root:not([data-theme="dark"]) .notice{background:var(--gc-surface)}
+:root:not([data-theme="dark"]) .research-toggle{background:var(--gc-surface)}
+/* ---------- Money totals share the banner green ----------
+   "Selected upgrade differences" already uses the accent banner; the net-cost
+   bar and the connected status are the same category (key money figures) but
+   rendered washed grey. Offline keeps its amber warning (higher specificity,
+   untouched). Mirrors .estimated-capital geometry. */
+.terminal-totals{background:var(--gc-accent);border:1px solid var(--gc-accent);border-radius:16px;padding:22px;color:var(--gc-on-accent)}
+@media(min-width:761px){.terminal-totals{align-items:center}}
+.terminal-totals>span{color:var(--gc-on-accent)}
+.terminal-totals b{color:var(--gc-on-accent);font-weight:600;font-variant-numeric:tabular-nums}
+.connection-status:not(.offline){background:var(--gc-accent);border-color:var(--gc-accent);color:var(--gc-on-accent);border-radius:16px}
+.connection-status:not(.offline) .status-dot{background:var(--gc-on-accent)}
+/* ---------- Guide card: same white surface as the form card ----------
+   It used the inset grey while the form card is white — side by side the
+   mismatch reads as a mistake. Beats tensor's !important with equal
+   specificity, later file. Dark mode follows via the same token. */
+.agent-card.guide-card{background:var(--gc-surface)!important;border-color:var(--gc-line)}
+/* ---------- Header nav: green active + hover ----------
+   The three links read dead grey; the active page deserves the accent. Same
+   selectors as the existing rules, later file, so these win ties. */
+.landing-header nav a:hover{background:var(--gc-accent-soft);color:var(--gc-accent)}
+.landing-header nav a[aria-current="page"]{background:var(--gc-accent-soft);color:var(--gc-accent);font-weight:600}
+/* ---------- Mobile card (≤800px): stack, don't grid ----------
+   A legacy rule turns `.agent-card` into a 2-column grid designed for an older
+   child layout. Current children (provider list, methodology link) have no grid
+   placement, so they auto-flow into squeezed side-by-side columns. Stack them. */
+@media(max-width:800px){
+  .agent-card.guide-card{display:flex;flex-direction:column;align-items:stretch}
+  .agent-card.guide-card>*{min-width:0;max-width:100%}
+  .agent-card .provider-list{width:100%}
+  .agent-card .provider-row{width:100%}
+  .agent-card>a.text-link{align-self:flex-start;max-width:100%}
 }
 .ui-empty-steps{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 .ui-empty-steps>span{display:inline-flex;align-items:center;gap:8px;padding:7px 13px 7px 7px;border:1px solid var(--gc-line);border-radius:999px;background:var(--gc-raised);font-size:11px;font-weight:600;color:var(--gc-muted);white-space:nowrap}

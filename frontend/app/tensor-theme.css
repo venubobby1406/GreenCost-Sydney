@@ -1,12 +1,12 @@
 /* TensorTonic-inspired colour and type system, shared by every GreenCost route. */
 :root {
- --gc-bg:#f7f6f2; --gc-surface:#fffefa; --gc-inset:#efeee9; --gc-raised:#ffffff;
- --gc-text:#222820; --gc-muted:#62695f; --gc-line:#deded7;
+ --gc-bg:#eae9e0; --gc-surface:#ffffff; --gc-inset:#e3e2d6; --gc-raised:#ffffff;
+ --gc-text:#1f261f; --gc-muted:#49514a; --gc-line:#bcc2b0;
  --gc-accent:#00753e; --gc-accent-hover:#005d31; --gc-accent-soft:#e3f0e6; --gc-on-accent:#fffdf5;
  --gc-warning:#8a4b20; --gc-warning-bg:#fff0df; --gc-warning-line:#e6c7a3;
  --gc-error:#ad382f; --gc-error-bg:#fff1ee; --gc-error-line:#e6b9b2;
  --gc-negative:#9e473a; --gc-negative-bg:#fae9e3;
- --gc-shadow:0 10px 30px #2228200b;
+ --gc-shadow:0 12px 32px #2228201a;
  color-scheme:light;
 }
 :root[data-theme=dark] {
