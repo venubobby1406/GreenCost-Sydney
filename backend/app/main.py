@@ -32,10 +32,10 @@ app.middleware("http")(guard)
 @app.get("/api/health")
 def health():
     rag = readiness()
-    return {"status": "ok", "rag_ready": rag["ready"], "knowledge": rag, "vector_db": "none",
-            "uploads_enabled": False,
-            "groq_configured": bool(os.getenv("GROQ_API_KEY")), "openrouter_configured": bool(os.getenv("OPENROUTER_API_KEY")), "gemini_configured": configured(), "tavily_configured": bool(os.getenv("TAVILY_API_KEY")),
-            "gemini_model": os.getenv("GEMINI_MODEL", "gemini-2.5-flash")}
+    # Provider booleans drive the client's provider-status panel. The exact model and
+    # RAG corpus internals were removed: they gave attackers a target without being used.
+    return {"status": "ok", "rag_ready": rag["ready"], "uploads_enabled": False,
+            "groq_configured": bool(os.getenv("GROQ_API_KEY")), "openrouter_configured": bool(os.getenv("OPENROUTER_API_KEY")), "gemini_configured": configured(), "tavily_configured": bool(os.getenv("TAVILY_API_KEY"))}
 
 
 @app.get("/api/demo")

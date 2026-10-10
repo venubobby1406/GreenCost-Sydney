@@ -1,0 +1,211 @@
+/* ==========================================================================
+   GreenCost UI layer — interaction primitives and polish.
+   Loaded LAST: this file must win the cascade against earlier theme layers.
+   Every colour reads a --gc-* token, so light and dark stay in sync.
+   ========================================================================== */
+
+/* ---------- Skeleton ---------- */
+.ui-skeleton{position:relative;overflow:hidden;border-radius:8px;background:color-mix(in srgb,var(--gc-text) 7%,transparent)}
+.ui-skeleton::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--gc-text) 6%,transparent),transparent);animation:ui-skeleton-shimmer 1.6s infinite}
+@keyframes ui-skeleton-shimmer{100%{transform:translateX(100%)}}
+.ui-skeleton-text{display:flex;flex-direction:column;gap:10px;width:100%}
+.ui-skeleton-line{height:12px;width:100%}
+.ui-skeleton-line-short{height:12px;width:62%}
+:root[data-theme=dark] .ui-skeleton{background:color-mix(in srgb,var(--gc-text) 10%,transparent)}
+:root[data-theme=dark] .ui-skeleton::after{background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--gc-text) 12%,transparent),transparent)}
+
+/* ---------- Tooltip ---------- */
+.ui-tooltip{position:relative;display:inline-flex}
+.ui-tooltip-anchor{display:inherit}
+.ui-tooltip-bubble{position:absolute;left:50%;z-index:60;padding:7px 10px;border-radius:8px;background:var(--gc-text);color:var(--gc-bg);font-size:12px;line-height:1.45;font-weight:500;letter-spacing:-.01em;white-space:normal;width:max-content;max-width:230px;text-align:center;box-shadow:0 8px 24px #0003;animation:ui-tip-in .16s cubic-bezier(.2,.8,.2,1) both;pointer-events:none}
+.ui-tooltip-bubble::after{content:'';position:absolute;left:50%;width:8px;height:8px;background:inherit;transform:translateX(-50%) rotate(45deg)}
+.ui-tooltip-top{bottom:calc(100% + 9px);transform:translateX(-50%)}
+.ui-tooltip-top::after{top:calc(100% - 4px)}
+.ui-tooltip-bottom{top:calc(100% + 9px);transform:translateX(-50%)}
+.ui-tooltip-bottom::after{bottom:calc(100% - 4px)}
+@keyframes ui-tip-in{from{opacity:0;transform:translateX(-50%) translateY(3px)}to{opacity:1}}
+
+/* ---------- Empty state ---------- */
+/* .ui-empty.ui-empty doubles specificity so legacy .compare-page .result-placeholder
+   rules from earlier layers cannot override the layout. */
+.ui-empty.ui-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:52px 32px;text-align:center;border:1px dashed var(--gc-line);border-radius:18px;background:color-mix(in srgb,var(--gc-inset) 55%,transparent);max-width:680px;margin:0 auto}
+.ui-empty-icon{display:grid;place-items:center;width:46px;height:46px;flex-shrink:0;border-radius:14px;background:var(--gc-accent-soft);color:var(--gc-accent)}
+.ui-empty-title{margin:0;font-size:17px;font-weight:600;letter-spacing:-.02em;color:var(--gc-text)}
+.ui-empty-text{margin:0;max-width:42ch;font-size:13px;line-height:1.7;color:var(--gc-muted)}
+/* ---------- Empty comparison placeholder ----------
+   Same language as the live site: left-aligned in the content column, hairline
+   below sharing the page insets. Steps + CTAs sit in that flow, left-aligned. */
+.result-empty{padding:56px max(5.5%,calc((100% - 1280px)/2)) 60px}
+/* One bottom hairline with the EXACT box of the section edge above:
+   max-width 1440 + auto margins (must match `.compare-page .comparison-section`,
+   which beats the 1280 rule). Full-width wrapper would overshoot it on wide screens. */
+.inline-results.is-empty{border-bottom:1px solid var(--gc-line);max-width:1440px;margin:0 auto}
+.landing:has(#results.is-empty) .landing-footer{border-top:0}
+.result-empty h2{margin:0;font-size:clamp(26px,3vw,34px);font-weight:600;letter-spacing:-.03em;line-height:1.2;color:var(--gc-text)}
+.result-empty>p{margin:14px 0 0;max-width:62ch;font-size:14px;line-height:1.7;color:var(--gc-muted)}
+.result-empty .ui-empty-steps{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-start;margin-top:26px}
+.result-empty .ui-empty-buttons{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-start;margin-top:20px;align-items:center}
+/* ---------- Research list rows ----------
+   The kind label used float:right, but these summaries are flex rows, where
+   floats are ignored — so each label landed wherever its title ended (zigzag).
+   margin-left:auto pins every label to the same right edge instead. */
+.results .research-list details>summary{display:flex;align-items:center;gap:14px;min-width:0}
+.results .research-list details>summary>span{float:none;margin-left:auto;flex-shrink:0;text-align:right;white-space:nowrap}
+/* ---------- Site-wide divider standard: 1440 centered ----------
+   Page-level hairlines must share one box or they visibly mismatch on wide
+   screens (header/compare already use max-width 1440 + auto margins; the
+   landing bands used 1324). This only binds above 1440px viewports, so
+   laptop, tablet and mobile layouts are untouched. */
+.landing .research-strip,
+.landing section.landing-evidence.compact-evidence,
+.landing .closing-note,
+.landing .landing-footer{max-width:1440px}
+/* While the sidebar layout persists, steps stay vertical (see mid-width fix below). */
+@media(max-width:1000px){
+  .comparison-grid.comparison-grid{grid-template-columns:minmax(0,1fr) minmax(0,300px)}
+  .comparison-grid>*{min-width:0}
+  .agent-card .guide-steps{display:flex;flex-direction:column;gap:2px;margin:20px 0}
+  .agent-card .guide-steps li{min-width:0;margin:10px 0}
+  .agent-card .guide-steps li>div{min-width:0}
+  .agent-card .guide-steps b,.agent-card .guide-steps p{overflow-wrap:break-word}
+  .agent-card{min-width:0}
+}
+@media(max-width:760px){
+  .result-empty{padding:40px 6% 44px}
+  .agent-card .guide-steps{display:flex;flex-direction:column}
+}
+.ui-empty-steps{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.ui-empty-steps>span{display:inline-flex;align-items:center;gap:8px;padding:7px 13px 7px 7px;border:1px solid var(--gc-line);border-radius:999px;background:var(--gc-raised);font-size:11px;font-weight:600;color:var(--gc-muted);white-space:nowrap}
+.ui-empty-steps b{display:grid;place-items:center;width:20px;height:20px;flex-shrink:0;border-radius:50%;background:var(--gc-accent-soft);color:var(--gc-accent);font-size:10px;font-weight:700}
+.ui-empty-buttons{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+
+/* ---------- Switch ---------- */
+.ui-switch{display:inline-flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--gc-text);user-select:none}
+.ui-switch input{position:absolute;opacity:0;width:0;height:0}
+.ui-switch-track{position:relative;flex-shrink:0;width:44px;height:26px;border-radius:999px;background:color-mix(in srgb,var(--gc-text) 18%,transparent);border:1px solid var(--gc-line);transition:background-color .2s,border-color .2s}
+.ui-switch-thumb{position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 2px 6px #00000026;transition:transform .22s cubic-bezier(.2,.8,.2,1)}
+.ui-switch.is-on .ui-switch-track{background:var(--gc-accent);border-color:var(--gc-accent)}
+.ui-switch.is-on .ui-switch-thumb{transform:translateX(18px)}
+.ui-switch.is-disabled{opacity:.5;cursor:not-allowed}
+.ui-switch input:focus-visible+.ui-switch-track{outline:2px solid var(--gc-accent);outline-offset:3px}
+
+/* ---------- Progress ---------- */
+.ui-progress{position:relative;width:100%;height:6px;border-radius:999px;background:color-mix(in srgb,var(--gc-text) 10%,transparent);overflow:hidden}
+.ui-progress-fill{display:block;height:100%;border-radius:inherit;background:var(--gc-accent);transition:width .35s cubic-bezier(.2,.8,.2,1)}
+
+/* ---------- Badge ---------- */
+.ui-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:.01em;line-height:1.5;white-space:nowrap;border:1px solid transparent}
+.ui-badge-neutral{background:var(--gc-inset);color:var(--gc-muted);border-color:var(--gc-line)}
+.ui-badge-accent{background:var(--gc-accent-soft);color:var(--gc-accent);border-color:color-mix(in srgb,var(--gc-accent) 22%,transparent)}
+.ui-badge-success{background:color-mix(in srgb,var(--gc-accent) 12%,transparent);color:var(--gc-accent);border-color:color-mix(in srgb,var(--gc-accent) 26%,transparent)}
+.ui-badge-warning{background:var(--gc-warning-bg);color:var(--gc-warning);border-color:var(--gc-warning-line)}
+.ui-badge-danger{background:var(--gc-error-bg);color:var(--gc-error);border-color:var(--gc-error-line)}
+
+/* ---------- Separator ---------- */
+.ui-separator{height:1px;margin:0;border:0;background:var(--gc-line)}
+.ui-separator-labelled{display:flex;align-items:center;gap:12px;width:100%}
+.ui-separator-rule{flex:1;height:1px;background:var(--gc-line)}
+.ui-separator-text{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--gc-muted);white-space:nowrap}
+
+/* ---------- Kbd ---------- */
+.ui-kbd{display:inline-flex;align-items:center;justify-content:center;min-width:22px;padding:2px 6px;border-radius:6px;border:1px solid var(--gc-line);border-bottom-width:2px;background:var(--gc-raised);color:var(--gc-muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;line-height:1.5}
+
+/* ---------- TextStream ---------- */
+.ui-text-stream{display:inline}
+.ui-text-stream-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.ui-text-stream::after{content:'';display:inline-block;width:2px;height:1em;margin-left:2px;vertical-align:text-bottom;background:var(--gc-accent);animation:ui-caret 1s steps(2) infinite}
+@keyframes ui-caret{50%{opacity:0}}
+
+/* ---------- ScrollArea ---------- */
+.ui-scroll-area{position:relative;min-width:0;max-width:100%}
+.ui-scroll-area::before,.ui-scroll-area::after{content:'';position:absolute;left:0;right:0;height:26px;pointer-events:none;opacity:0;transition:opacity .2s;z-index:2}
+.ui-scroll-area::before{top:0;background:linear-gradient(to bottom,var(--gc-bg),transparent)}
+.ui-scroll-area::after{bottom:0;background:linear-gradient(to top,var(--gc-bg),transparent)}
+.ui-scroll-area.is-scrolled-top::before{opacity:1}
+.ui-scroll-area.is-scrolled-bottom::after{opacity:1}
+.ui-scroll-viewport{overflow:auto;scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--gc-text) 22%,transparent) transparent}
+.ui-scroll-viewport:focus-visible{outline:2px solid var(--gc-accent);outline-offset:2px;border-radius:10px}
+.ui-scroll-viewport::-webkit-scrollbar{width:10px;height:10px}
+.ui-scroll-viewport::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--gc-text) 20%,transparent);border-radius:999px;border:3px solid transparent;background-clip:content-box}
+.ui-scroll-viewport::-webkit-scrollbar-thumb:hover{background:color-mix(in srgb,var(--gc-text) 32%,transparent);background-clip:content-box}
+.ui-scroll-viewport::-webkit-scrollbar-track{background:transparent}
+
+/* ---------- Toast ---------- */
+.toast-layer{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:80;display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:none;width:max-content;max-width:calc(100vw - 32px)}
+.toast{position:relative;display:flex;align-items:center;gap:11px;overflow:hidden;padding:13px 15px;border-radius:14px;background:var(--gc-raised);border:1px solid var(--gc-line);box-shadow:0 12px 40px #0000001f;font-size:13px;font-weight:500;color:var(--gc-text);pointer-events:auto}
+.toast>svg{flex-shrink:0;color:var(--gc-accent)}
+.toast>span{min-width:0}
+.toast button{display:grid;place-items:center;width:28px;height:28px;flex-shrink:0;margin-left:2px;border-radius:8px;color:var(--gc-muted);transition:background-color .18s,color .18s}
+.toast button:hover{background:var(--gc-inset);color:var(--gc-text)}
+.toast-countdown{position:absolute;left:0;bottom:0;height:2px;width:100%;background:var(--gc-accent);transform-origin:left;animation:toast-drain 6s linear forwards}
+@keyframes toast-drain{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+
+/* ---------- Global polish ---------- */
+*{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--gc-text) 18%,transparent) transparent}
+::selection{background:var(--gc-accent-soft);color:var(--gc-accent)}
+:focus-visible{outline:2px solid var(--gc-accent);outline-offset:3px;border-radius:4px}
+/* Cards lift on hover — only where it cannot cause layout shift. */
+.result-placeholder,.ui-empty{transition:border-color .2s,background-color .2s}
+/* ---------- Provider connections ----------
+   Rows are a real list now (ul/li), so legacy `.provider-details>p` card rules
+   from earlier layers no longer apply. Short badge labels never overflow;
+   the full status stays in the badge `title`. */
+.provider-details .provider-list{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.provider-details .provider-row{display:flex;gap:11px;align-items:flex-start;padding:12px 13px;border:1px solid var(--gc-line);border-radius:12px;background:var(--gc-raised);margin:0}
+.provider-details .provider-row-body{display:flex;flex-direction:column;align-items:flex-start;gap:7px;min-width:0;flex:1}
+.provider-details .provider-row-body>b{font-size:12px;font-weight:600;color:var(--gc-text);line-height:1.4}
+.provider-details .provider-dot{flex-shrink:0;width:8px;height:8px;margin-top:5px;border-radius:50%;background:color-mix(in srgb,var(--gc-text) 30%,transparent)}
+.provider-details .provider-dot-accent,.provider-details .provider-dot-success{background:var(--gc-accent)}
+.provider-details .provider-dot-warning{background:var(--gc-warning)}
+.provider-details .provider-dot-danger{background:var(--gc-error)}
+.provider-details .provider-dot-neutral{background:color-mix(in srgb,var(--gc-text) 30%,transparent)}
+.provider-details .ui-badge{white-space:normal;text-align:left;line-height:1.45;max-width:100%}
+.provider-details .provider-note{display:block;margin:10px 2px 0;font-size:11px;line-height:1.65;color:var(--gc-muted)}
+.provider-details>summary>span{flex:1}
+
+/* ---------- Headline cost cards ----------
+   The grid stretched both cards to equal height, so opening one card's
+   "remaining costs" left a dead void in the other. Cards now size to content. */
+.headline-costs.headline-costs{align-items:start}
+.headline-costs>article{min-width:0}
+.cost-breakdown{margin-top:22px;border-top:1px solid var(--gc-line);padding-top:6px}
+.cost-breakdown>summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 2px;font-size:13px;font-weight:600;color:var(--gc-text)}
+.cost-breakdown>summary::-webkit-details-marker{display:none}
+.cost-breakdown>div{display:flex;align-items:baseline;justify-content:space-between;gap:14px;padding:11px 2px;border-bottom:1px solid var(--gc-line);font-size:13px}
+.cost-breakdown>div:last-child{border-bottom:0}
+.cost-breakdown>div>span{color:var(--gc-muted);min-width:0}
+.cost-breakdown>div>b{font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--gc-text)}
+
+/* ---------- Form topline controls ----------
+   Legacy #62655f measured 2.77:1 on the dark topline (AA needs 4.5:1).
+   Tokens retune per theme, so both modes now clear AA. */
+.form-topline button{color:var(--gc-text)!important;font-weight:500;font-size:12px;padding:8px 13px;border-radius:10px;background:transparent;text-decoration:none!important;white-space:nowrap;transition:background-color .18s,color .18s}
+.form-topline button:hover:not(:disabled),.form-topline button:focus-visible{background:var(--gc-accent-soft);color:var(--gc-accent)!important;text-decoration:none!important}
+.form-topline button:disabled{opacity:.45;cursor:not-allowed}
+.form-topline button:focus-visible{outline:2px solid var(--gc-accent);outline-offset:3px}
+.form-topline>span{color:var(--gc-text);font-weight:600;letter-spacing:.08em}
+
+/* ---------- Accessibility floor: nothing below 11px ----------
+   Earlier layers set some labels to 7–9px. This layer loads last and pins a
+   readable floor. !important is deliberate so the floor survives the cascade. */
+:is(.eyebrow,.hero-tag,.world-top,.landing-footer,.hero-proof,.result-metrics span,.result-metrics small,.price-badge,
+    .source-strip div,.source-strip>span,.floating-note small,.world-controls small,.sky-cycle-status small,
+    .stage-timeline small,.provider-details small,.measure-choice small,.how-cards p,.agent-status small,
+    .form-stepper b,.guide-steps b,.guide-steps p,.question-presets button,.ask-controls input,.chat-answer details,
+    .data-table th,.limitations,.small-note,.field small,.design-categories b,.ui-pill-count,.method-page small,
+    .comparison-footnote,.draft-status,.connection-status,.reset-confirm,.projects-panel p,.result-placeholder p,
+    .ui-empty-text,.ui-separator-text,.ui-kbd,.ui-badge,.landing .research-strip,.research-strip,
+    .form-topline,.form-topline span,.form-topline button,.form-topline div,.form-stepper button,
+    .input-unit span,.landing-footer small,.landing-footer a,.landing-footer span,.local-pill,.hero-model small,
+    .world-scene small,.landing-compare small,.model-badge,.source-value){font-size:11px!important}
+
+/* Wide tracking was compensating for tiny sizes; pull it back now that text is legible. */
+:is(.hero-tag,.eyebrow,.world-top,.result-metrics span,.data-table th,.source-strip div,.ui-separator-text){letter-spacing:.06em!important}
+
+@media (prefers-reduced-motion: reduce){
+  .ui-skeleton::after{animation:none}
+  .ui-tooltip-bubble{animation:none}
+  .ui-text-stream::after{animation:none}
+  .ui-progress-fill,.ui-switch-thumb{transition:none}
+  *{scroll-behavior:auto!important}
+}

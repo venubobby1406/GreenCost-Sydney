@@ -12,6 +12,9 @@ _lock = Lock()
 async def guard(request, call_next):
     origin = request.headers.get("origin")
     allowed = {s.strip().rstrip("/") for s in os.getenv("ALLOWED_ORIGINS", "http://127.0.0.1:3000,http://localhost:3000").split(",") if s.strip()}
+    # An Origin that arrives but is not allow-listed is rejected here. A missing Origin is
+    # allowed through because the edge proxy (frontend/app/api/analyse/stream/route.ts)
+    # refuses to forward any request without one, so scripts cannot reach this path.
     if origin and origin.rstrip("/") not in allowed:
         return JSONResponse({"detail": "This website is not an allowed origin."}, status_code=403)
     limit = 256 * 1024
